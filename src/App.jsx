@@ -28,6 +28,12 @@ import {
   User as UserIcon 
 } from 'lucide-react';
 import { getModuleById } from './data/syllabus'; // <--- Import the helper
+import QuestionUpload from './components/QuestionUpload'; // <--- 引入组件
+import KnowledgeUpload from './components/KnowledgeUpload'; // <--- 引入
+import MyNotes from './components/MyNotes'; // <--- 引入
+import KnowledgeDetail from './components/KnowledgeDetail'; // <--- 引入
+import ManageQuestions from './components/ManageQuestions'; // <--- 引入
+import UserDashboard from './components/UserDashboard'; // <--- 引入
 
 // --- 简单的统计页面组件 ---
 const StatsView = () => (
@@ -40,7 +46,7 @@ const StatsView = () => (
 );
 
 // --- Quiz Wrapper with Data Lookup ---
-const QuizWrapper = () => {
+const QuizWrapper = ({ user }) => { // <--- 接收 user
   const { moduleId } = useParams();
   const navigate = useNavigate();
   
@@ -59,7 +65,15 @@ const QuizWrapper = () => {
     );
   }
 
-  return <QuizInterface module={module} onExit={() => navigate('/syllabus')} />;
+  return (
+    <div className="min-h-screen bg-slate-50 py-8 px-4">
+      <QuizInterface 
+        module={module} 
+        user={user} // <--- 传递 user 给 QuizInterface
+        onExit={() => navigate('/')} 
+      />
+    </div>
+  );
 };
 
 // --- Main App Component ---
@@ -100,7 +114,10 @@ const App = () => {
       <main className="min-h-[calc(100vh-200px)]">
         <Routes>
           {/* 首页：任何人可见 */}
-          <Route path="/" element={<Dashboard onSelectModule={handleSelectModule} />} />
+          <Route 
+            path="/" 
+            element={<Dashboard user={user} onSelectModule={handleSelectModule} />} 
+          />
           
           {/* 登录页：已登录则重定向到首页，未登录显示登录组件 */}
           <Route path="/login" element={
@@ -112,11 +129,41 @@ const App = () => {
           
           {/* 测验和统计：需要登录，否则重定向到登录页 */}
           <Route path="/quiz/:moduleId" element={
-            user ? <QuizWrapper /> : <Navigate to="/login" replace />
+            user ? <QuizWrapper user={user} /> : <Navigate to="/login" replace /> // <--- 传递 user
           } />
           
           <Route path="/stats" element={
             user ? <StatsView /> : <Navigate to="/login" replace />
+          } />
+          
+          {/* 新增：上传题目路由 (需要登录) */}
+          <Route path="/upload" element={
+            user ? <QuestionUpload user={user} /> : <Navigate to="/login" replace />
+          } />
+
+          {/* 新增：知识点上传路由 */}
+          <Route path="/knowledge/new" element={
+            user ? <KnowledgeUpload user={user} /> : <Navigate to="/login" replace />
+          } />
+          
+          {/* 管理笔记 */}
+          <Route path="/knowledge/manage" element={
+            user ? <MyNotes user={user} /> : <Navigate to="/login" replace />
+          } />
+          
+          {/* 查看笔记详情 */}
+          <Route path="/knowledge/:id" element={
+            user ? <KnowledgeDetail /> : <Navigate to="/login" replace />
+          } />
+          
+          {/* 新增：管理题目路由 */}
+          <Route path="/questions/manage" element={
+            user ? <ManageQuestions user={user} /> : <Navigate to="/login" replace />
+          } />
+          
+          {/* 新增：用户个人中心路由 */}
+          <Route path="/profile" element={
+            user ? <UserDashboard user={user} onLogout={handleLogout} /> : <Navigate to="/login" replace />
           } />
           
           <Route path="*" element={<Navigate to="/" replace />} />
