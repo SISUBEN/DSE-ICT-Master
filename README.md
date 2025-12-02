@@ -7,32 +7,52 @@ DSE ICT Master is a web application designed to help students prepare for the HK
 ## Project Structure
 
 ```
-dse-ict-master
+├── App.jsx
+├── deploy.ps1
+├── deploy.sh
+├── docker-compose.yml
+├── Dockerfile
+├── index.html
+├── LICENSE
+├── mongo-init.js
+├── nginx.conf
+├── package.json
+├── package-lock.json
+├── postcss.config.js
 ├── public
-│   └── vite.svg          # Logo or icon for the application
+│   └── vite.svg
+├── README.md
+├── server
+│   ├── db
+│   ├── Dockerfile
+│   ├── index.js
+│   ├── seedQuestions.js
+│   └── uploads
 ├── src
-│   ├── assets
-│   │   └── react.svg     # SVG image representing React
-│   ├── components
-│   │   ├── Dashboard.jsx  # Main dashboard interface
-│   │   ├── Header.jsx     # Navigation header
-│   │   ├── ModuleCard.jsx  # Card for each module
-│   │   ├── QuizInterface.jsx # Quiz management interface
-│   │   ├── StatCard.jsx   # Displays individual statistics
-│   │   └── SyllabusView.jsx # Presents the syllabus
-│   ├── data
-│   │   ├── mockQuestions.js # Mock questions for quizzes
-│   │   └── syllabus.js     # Structure of the syllabus
-│   ├── App.css            # CSS styles for the main application
-│   ├── App.jsx            # Main application component
-│   ├── index.css          # Global CSS styles
-│   └── main.jsx           # Entry point of the application
-├── .gitignore             # Files and directories to ignore by Git
-├── index.html             # Main HTML file
-├── package.json           # npm configuration file
-├── postcss.config.js      # PostCSS configuration
-├── tailwind.config.js      # Tailwind CSS configuration
-└── vite.config.js         # Vite configuration
+│   ├── App.css
+│   ├── App.jsx
+│   ├── assets
+│   │   └── react.svg
+│   ├── components
+│   │   ├── Dashboard.jsx
+│   │   ├── Header.jsx
+│   │   ├── KnowledgeDetail.jsx
+│   │   ├── KnowledgeUpload.jsx
+│   │   ├── Login.jsx
+│   │   ├── ManageQuestions.jsx
+│   │   ├── ModuleCard.jsx
+│   │   ├── MyNotes.jsx
+│   │   ├── QuestionUpload.jsx
+│   │   ├── QuizInterface.jsx
+│   │   ├── StatCard.jsx
+│   │   ├── SyllabusView.jsx
+│   │   └── UserDashboard.jsx
+│   ├── data
+│   │   └── syllabus.js
+│   ├── index.css
+│   └── main.jsx
+├── tailwind.config.js
+└── vite.config.js
 ```
 
 ## Installation
@@ -40,28 +60,34 @@ dse-ict-master
 To get started with the project, follow these steps:
 
 1. Clone the repository:
+
    ```
    git clone https://github.com/SISUBEN/DSE-ICT-Master.git
    ```
 
 2. Navigate to the project directory:
+
    ```
    cd dse-ict-master
    ```
 
-3. Install the dependencies:
+3. Run all-in-one deploy script
    ```
-   npm install
+   sudo bash deploy.sh
    ```
 
-4. Start the development server:
-   ```
-   npm run dev
-   ```
+> front-end server on https://example.com:80/
+> back-end server on https://example.com:5000/
+
+You should **CHANGE THE DATABASE CONFIDENTIALITY MANUALLY** to keep you database safe.
+
+Change the following files.
+- `.env`
+- `docker-compose.yml`
 
 ## Usage
 
-Once the development server is running, you can access the application in your web browser at `http://localhost:3000`. 
+Once the development server is running, you can access the application in your web browser at `http://localhost:3000`.
 
 Explore the different modules, take quizzes, and track your progress as you prepare for the HKDSE ICT examination.
 
