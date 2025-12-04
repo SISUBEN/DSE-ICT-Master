@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { Routes, Route, Navigate, useNavigate, useParams, Link } from 'react-router-dom'; // <--- 引入路由组件
+import { Routes, Route, Navigate, useNavigate, useParams, Link, useLocation } from 'react-router-dom'; // <--- 引入路由组件
 import Header from './components/Header';
 import Dashboard from './components/Dashboard';
 import SyllabusView from './components/SyllabusView';
 import QuizInterface from './components/QuizInterface';
 import Login from './components/Login';
+import AdminDashboard from './components/AdminDashboard';
 import { 
   BarChart3, 
   BookOpen, 
@@ -34,6 +35,7 @@ import MyNotes from './components/MyNotes'; // <--- 引入
 import KnowledgeDetail from './components/KnowledgeDetail'; // <--- 引入
 import ManageQuestions from './components/ManageQuestions'; // <--- 引入
 import UserDashboard from './components/UserDashboard'; // <--- 引入
+import SqlDojo from './components/SqlDojo'; // <--- 1. 引入组件
 
 // --- 简单的统计页面组件 ---
 const StatsView = () => (
@@ -78,21 +80,39 @@ const QuizWrapper = ({ user }) => { // <--- 接收 user
 
 // --- Main App Component ---
 const App = () => {
-  const [user, setUser] = useState(null);
+  // 1. 统一在初始化时读取 localStorage，避免 useEffect 中的重复逻辑和报错
+  const [user, setUser] = useState(() => {
+    try {
+      // 优先读取 dse_user (这是登录时保存的 key)
+      const dseUser = localStorage.getItem('dse_user');
+      if (dseUser && dseUser !== 'undefined') {
+        return JSON.parse(dseUser);
+      }
+      
+      // 兼容旧的 user key (如果有的话)
+      const legacyUser = localStorage.getItem('user');
+      if (legacyUser && legacyUser !== 'undefined') {
+        return JSON.parse(legacyUser);
+      }
+    } catch (e) {
+      console.error('Failed to load user from storage:', e);
+      // 如果解析失败，清除可能损坏的数据
+      localStorage.removeItem('dse_user');
+      localStorage.removeItem('user');
+    }
+    return null;
+  });
+
   const navigate = useNavigate();
 
-  // 检查本地存储
-  useEffect(() => {
-    const savedUser = localStorage.getItem('dse_user');
-    if (savedUser) {
-      setUser(JSON.parse(savedUser));
-    }
-  }, []);
-
   const handleLogin = (userData) => {
+    if (!userData) {
+      console.error("Login failed: No user data received");
+      return;
+    }
     setUser(userData);
     localStorage.setItem('dse_user', JSON.stringify(userData));
-    navigate('/'); // 登录成功后跳转回首页
+    navigate('/'); 
   };
 
   const handleLogout = () => {
@@ -165,8 +185,12 @@ const App = () => {
           <Route path="/profile" element={
             user ? <UserDashboard user={user} onLogout={handleLogout} /> : <Navigate to="/login" replace />
           } />
+
+          {/* --- 2. 添加 SQL Dojo 路由 (放在 "*" 路由之前) --- */}
+          <Route path="/sql-dojo" element={<SqlDojo />} />
           
           <Route path="*" element={<Navigate to="/" replace />} />
+          <Route path="/admin" element={<AdminDashboard user={user} />} />
         </Routes>
       </main>
 

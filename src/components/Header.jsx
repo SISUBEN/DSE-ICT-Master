@@ -4,7 +4,7 @@ import {
   Menu, X, LogOut, User as UserIcon, 
   Upload, BookOpen, Library, ChevronDown, 
   LayoutDashboard, GraduationCap, BarChart3, PlusCircle,
-  FileQuestion // <--- 引入图标
+  FileQuestion, Database // <--- 引入图标
 } from 'lucide-react';
 
 const Header = ({ user, onLogout }) => {
@@ -63,17 +63,17 @@ const Header = ({ user, onLogout }) => {
   };
 
   return (
-    <header className="bg-slate-900/95 backdrop-blur-md border-b border-slate-800 sticky top-0 z-50">
+    <header className="bg-white/80 backdrop-blur-md border-b border-slate-200/60 sticky top-0 z-50 shadow-sm">
       <div className="container mx-auto px-4 h-16 flex justify-between items-center">
         
         {/* --- Logo --- */}
         <Link to="/" className="flex items-center space-x-3 group">
-          <div className="w-9 h-9 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl flex items-center justify-center text-white font-bold text-xl shadow-lg shadow-blue-500/20 group-hover:shadow-blue-500/40 transition-all">
+          <div className="w-9 h-9 bg-gradient-to-br from-blue-600 to-purple-600 rounded-xl flex items-center justify-center text-white font-bold text-xl shadow-lg shadow-blue-500/20 group-hover:shadow-blue-500/40 transition-all transform group-hover:rotate-3">
             D
           </div>
           <div className="flex flex-col">
-            <span className="text-lg font-bold text-white leading-none tracking-tight">
-              DSE<span className="text-blue-400">ICT</span>Master
+            <span className="text-lg font-bold text-slate-800 leading-none tracking-tight group-hover:text-blue-600 transition">
+              DSE<span className="text-blue-600">ICT</span>Master
             </span>
             <span className="text-[10px] text-slate-400 font-medium tracking-wider uppercase">Learning Platform</span>
           </div>

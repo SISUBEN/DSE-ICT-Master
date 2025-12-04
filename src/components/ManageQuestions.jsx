@@ -27,7 +27,7 @@ const ManageQuestions = ({ user }) => {
     if (!window.confirm('確定要刪除這道題目嗎？')) return;
 
     try {
-      const res = await fetch(`/api/questions/${id}`, { method: 'DELETE' });
+      const res = await fetch(`/api/questions/${id}?userId=${user.id}`, { method: 'DELETE' });
       if (res.ok) {
         setQuestions(questions.filter(q => q._id !== id));
       } else {
@@ -72,13 +72,14 @@ const ManageQuestions = ({ user }) => {
                 <span className="bg-blue-50 text-blue-700 text-xs px-2 py-1 rounded font-medium border border-blue-100">
                   {getModuleName(q.moduleId)}
                 </span>
-                <button 
-                  onClick={() => handleDelete(q._id)}
-                  className="text-slate-400 hover:text-red-600 transition p-1 hover:bg-red-50 rounded"
-                  title="刪除"
-                >
-                  <Trash2 size={18} />
-                </button>
+                {(user?.role === 'admin' || user?.id === q.createdBy) && (
+                  <button 
+                    onClick={() => handleDelete(q._id)}
+                    className="text-red-500 hover:text-red-700"
+                  >
+                    <Trash2 size={18} />
+                  </button>
+                )}
               </div>
               
               <h3 className="text-lg font-bold text-slate-800 mb-3">{q.question}</h3>

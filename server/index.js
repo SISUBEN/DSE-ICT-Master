@@ -3,10 +3,21 @@ import cors from 'cors';
 import mongoose from 'mongoose';
 import dotenv from 'dotenv';
 import bcrypt from 'bcryptjs';
-import multer from 'multer'; // <--- 引入 multer
+import multer from 'multer';
 import path from 'path';
 import fs from 'fs';
 import { fileURLToPath } from 'url';
+import { seedAdminUser } from './admin.js';
+
+// --- 导入模型 ---
+import { 
+  User, 
+  Question, 
+  UserSetting, 
+  UserAction, 
+  KnowledgePoint, 
+  Module 
+} from './models.js'; // <--- 新增导入
 
 // 加载环境变量
 dotenv.config();
@@ -24,17 +35,19 @@ if (!fs.existsSync(uploadDir)) {
   fs.mkdirSync(uploadDir);
 }
 
-// --- Multer 配置 (图片上传) ---
+// --- Multer 存储配置 (添加这部分代码) ---
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
     cb(null, uploadDir);
   },
   filename: (req, file, cb) => {
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-    cb(null, uniqueSuffix + path.extname(file.originalname));
+    // 使用时间戳防止文件名冲突
+    cb(null, Date.now() + '-' + file.originalname);
   }
 });
-const upload = multer({ storage: storage });
+
+// --- Multer 中间件 ---
+const upload = multer({ storage: storage }); // 这里使用了上面定义的 storage
 
 // 中间件
 app.use(cors());
@@ -44,68 +57,55 @@ app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // --- MongoDB 连接 ---
 mongoose.connect(process.env.MONGO_URI)
-  .then(() => console.log('MongoDB 连接成功'))
+  .then(() => {
+    console.log('MongoDB 连接成功');
+    seedDatabase(); // <--- 连接成功后检查并初始化数据
+    seedAdminUser(); // <--- 调用初始化函数
+  })
   .catch(err => console.error('MongoDB 连接失败:', err));
 
-// ==========================================
-//               数据库模型定义
-// ==========================================
+// --- 初始 Syllabus 数据 (用于初始化数据库) ---
+const INITIAL_SYLLABUS_DATA = {
+  compulsory: [
+    { id: 'core-a', code: 'Unit A', title: '資訊處理', description: '數據組織、數據控制及數據表達。' },
+    { id: 'core-b', code: 'Unit B', title: '電腦系統基礎', description: '電腦系統的基本組成部分及操作。' },
+    { id: 'core-c', code: 'Unit C', title: '互聯網及其應用', description: '網絡基礎、互聯網服務及應用。' },
+    { id: 'core-d', code: 'Unit D', title: '基本編程概念', description: '解決問題的步驟、算法設計及編程。' },
+    { id: 'core-e', code: 'Unit E', title: '社會影響', description: '資訊及通訊科技對社會的影響及相關議題。' }
+  ],
+  electives: [
+    { id: 'elec-a', code: '2A', title: '數據庫', description: '數據庫設計、SQL 及數據庫應用。' },
+    { id: 'elec-b', code: '2B', title: '數據通訊及建網', description: '網絡協議、網絡設備及網絡管理。' },
+    { id: 'elec-c', code: '2C', title: '多媒體製作', description: '多媒體元素、網頁設計及網站開發。' },
+    { id: 'elec-d', code: '2D', title: '軟件開發', description: '軟件開發生命週期、編程語言及算法。' }
+  ]
+};
 
-// 1. 用户模型 (User)
-const userSchema = new mongoose.Schema({
-  username: { type: String, required: true, unique: true },
-  email: { type: String, required: true, unique: true },
-  password: { type: String, required: true }, 
-  createdAt: { type: Date, default: Date.now }
-});
-const User = mongoose.model('User', userSchema);
+// --- 数据库初始化函数 ---
+const seedDatabase = async () => {
+  try {
+    const count = await Module.countDocuments();
+    if (count === 0) {
+      console.log('正在初始化课程数据...');
+      const compulsory = INITIAL_SYLLABUS_DATA.compulsory.map(m => ({ ...m, category: 'compulsory' }));
+      const electives = INITIAL_SYLLABUS_DATA.electives.map(m => ({ ...m, category: 'elective' }));
+      
+      await Module.insertMany([...compulsory, ...electives]);
+      console.log('课程数据初始化完成');
+    }
+  } catch (error) {
+    console.error('初始化数据失败:', error);
+  }
+};
 
-// 2. 题目模型 (Question)
-const questionSchema = new mongoose.Schema({
-  moduleId: { type: String, required: true, index: true }, 
-  question: { type: String, required: true },
-  options: [{ type: String, required: true }], 
-  correct: { type: Number, required: true }, 
-  explanation: { type: String }, 
-  difficulty: { type: String, enum: ['easy', 'medium', 'hard'], default: 'medium' },
-  createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }, // <--- 新增这一行
-  createdAt: { type: Date, default: Date.now }
-});
-const Question = mongoose.model('Question', questionSchema);
-
-// 3. 用户设置模型 (UserSetting)
-const userSettingSchema = new mongoose.Schema({
-  userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true, unique: true },
-  theme: { type: String, default: 'light' }, // 'light' or 'dark'
-  notificationsEnabled: { type: Boolean, default: true },
-  targetGrade: { type: String, default: '5**' }, // 目标等级
-  examYear: { type: Number, default: new Date().getFullYear() },
-  updatedAt: { type: Date, default: Date.now }
-});
-const UserSetting = mongoose.model('UserSetting', userSettingSchema);
-
-// 4. 用户行为/进度模型 (UserAction)
-const userActionSchema = new mongoose.Schema({
-  userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true, index: true },
-  actionType: { type: String, required: true }, // 例如: 'QUIZ_COMPLETE', 'LOGIN', 'VIEW_MODULE'
-  moduleId: { type: String }, // 相关单元 ID (可选)
-  score: { type: Number }, // 如果是测验，记录分数
-  totalQuestions: { type: Number }, // 总题数
-  details: { type: mongoose.Schema.Types.Mixed }, // 其他详细数据 (JSON)
-  timestamp: { type: Date, default: Date.now }
-});
-const UserAction = mongoose.model('UserAction', userActionSchema);
-
-// 5. 知识点模型 (KnowledgePoint) <--- 新增
-const knowledgeSchema = new mongoose.Schema({
-  moduleId: { type: String, required: true, index: true },
-  title: { type: String, required: true },
-  content: { type: String, required: true }, // Markdown 内容
-  author: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
-  tags: [{ type: String }],
-  createdAt: { type: Date, default: Date.now }
-});
-const KnowledgePoint = mongoose.model('KnowledgePoint', knowledgeSchema);
+// --- MongoDB 连接 ---
+mongoose.connect(process.env.MONGO_URI)
+  .then(() => {
+    console.log('MongoDB 连接成功');
+    seedDatabase(); // <--- 连接成功后检查并初始化数据
+    seedAdminUser(); // <--- 调用初始化函数
+  })
+  .catch(err => console.error('MongoDB 连接失败:', err));
 
 // --- 模拟课程数据 ---
 const MOCK_DATA = {
@@ -115,6 +115,41 @@ const MOCK_DATA = {
   ]
 };
 
+// // --- 模拟数据库中的 Syllabus 数据 ---
+// // 建议：将来可以将这些数据迁移到 MongoDB 的 'modules' 集合中
+// const SYLLABUS_DATA = {
+//   compulsory: [
+//     { id: 'core-a', code: 'Unit A', title: '資訊處理', description: '數據組織、數據控制及數據表達。' },
+//     { id: 'core-b', code: 'Unit B', title: '電腦系統基礎', description: '電腦系統的基本組成部分及操作。' },
+//     { id: 'core-c', code: 'Unit C', title: '互聯網及其應用', description: '網絡基礎、互聯網服務及應用。' },
+//     { id: 'core-d', code: 'Unit D', title: '基本編程概念', description: '解決問題的步驟、算法設計及編程。' },
+//     { id: 'core-e', code: 'Unit E', title: '社會影響', description: '資訊及通訊科技對社會的影響及相關議題。' }
+//   ],
+//   electives: [
+//     { id: 'elec-a', code: '2A', title: '數據庫', description: '數據庫設計、SQL 及數據庫應用。' },
+//     { id: 'elec-b', code: '2B', title: '數據通訊及建網', description: '網絡協議、網絡設備及網絡管理。' },
+//     { id: 'elec-c', code: '2C', title: '多媒體製作', description: '多媒體元素、網頁設計及網站開發。' },
+//     { id: 'elec-d', code: '2D', title: '軟件開發', description: '軟件開發生命週期、編程語言及算法。' }
+//   ]
+// };
+// --- Syllabus API ---
+// 获取课程大纲 (从数据库读取)
+app.get('/api/syllabus', async (req, res) => {
+  try {
+    const modules = await Module.find({});
+    
+    // 将扁平的数据库数据转换为前端需要的结构
+    const response = {
+      compulsory: modules.filter(m => m.category === 'compulsory'),
+      electives: modules.filter(m => m.category === 'elective')
+    };
+    
+    res.json(response);
+  } catch (error) {
+    console.error('Fetch syllabus error:', error);
+    res.status(500).json({ message: '获取课程数据失败' });
+  }
+});
 // ==========================================
 //                 API 路由
 // ==========================================
@@ -185,14 +220,50 @@ app.get('/api/questions/user/:userId', async (req, res) => {
   }
 });
 
-// 新增：删除题目
+// 删除题目 (完善权限检查)
 app.delete('/api/questions/:id', async (req, res) => {
+  const { userId } = req.query; // 确保从 query 获取
+
   try {
-    const result = await Question.findByIdAndDelete(req.params.id);
-    if (!result) return res.status(404).json({ message: '题目不存在' });
-    res.json({ success: true });
+    const question = await Question.findById(req.params.id);
+    if (!question) return res.status(404).json({ message: '题目不存在' });
+
+    const user = await User.findById(userId);
+    if (!user) return res.status(404).json({ message: '用户不存在' });
+
+    // 权限检查：管理员 OR 题目作者
+    // 注意：question.createdBy 可能是 ObjectId，需要转字符串比较
+    const isOwner = question.createdBy && question.createdBy.toString() === userId;
+    const isAdmin = user.role === 'admin';
+
+    if (isAdmin || isOwner) {
+      await Question.findByIdAndDelete(req.params.id);
+      res.json({ success: true });
+    } else {
+      res.status(403).json({ message: '无权删除此题目' });
+    }
   } catch (error) {
+    console.error('Delete question error:', error);
     res.status(500).json({ message: '删除失败' });
+  }
+});
+
+// --- 新增：获取所有题目 (仅限管理员) ---
+app.get('/api/admin/questions', async (req, res) => {
+  const { userId } = req.query;
+
+  try {
+    const user = await User.findById(userId);
+    if (!user || user.role !== 'admin') {
+      return res.status(403).json({ message: '无权访问' });
+    }
+
+    // 获取所有题目，按时间倒序
+    const questions = await Question.find().sort({ createdAt: -1 });
+    res.json(questions);
+  } catch (error) {
+    console.error('Fetch all questions error:', error);
+    res.status(500).json({ message: '获取题目失败' });
   }
 });
 
@@ -270,6 +341,36 @@ app.put('/api/settings/:userId', async (req, res) => {
 
 // --- 认证 API ---
 
+// 登录路由 (添加这部分)
+app.post('/api/login', async (req, res) => {
+  const { username, password } = req.body;
+
+  try {
+    // 查找用户
+    const user = await User.findOne({ username });
+    if (!user) {
+      return res.status(400).json({ message: '用户名或密码错误' });
+    }
+
+    // 验证密码
+    const isMatch = await bcrypt.compare(password, user.password);
+    if (!isMatch) {
+      return res.status(400).json({ message: '用户名或密码错误' });
+    }
+
+    // 返回用户信息 (不包含密码)
+    res.json({
+      id: user._id,
+      username: user.username,
+      email: user.email,
+      role: user.role
+    });
+  } catch (error) {
+    console.error('Login error:', error);
+    res.status(500).json({ message: '服务器错误' });
+  }
+});
+
 app.post('/api/register', async (req, res) => {
   const { username, password, email } = req.body;
   
@@ -294,53 +395,6 @@ app.post('/api/register', async (req, res) => {
     // 初始化用户设置
     await new UserSetting({ userId: newUser._id }).save();
     
-    console.log('新用户注册:', username);
-    res.status(201).json({ success: true, user: { id: newUser._id, username: newUser.username, email: newUser.email } });
-
-  } catch (error) {
-    console.error('注册错误:', error);
-    res.status(500).json({ message: '服务器错误' });
-  }
-});
-
-app.post('/api/login', async (req, res) => {
-  const { username, password } = req.body;
-
-  try {
-    const user = await User.findOne({ username });
-    if (!user) return res.status(400).json({ message: '用户名或密码错误' });
-
-    const isMatch = await bcrypt.compare(password, user.password);
-    if (!isMatch) return res.status(400).json({ message: '用户名或密码错误' });
-
-    // 记录登录行为
-    await new UserAction({ userId: user._id, actionType: 'LOGIN' }).save();
-
-    res.json({ success: true, user: { id: user._id, username: user.username, email: user.email } });
-
-  } catch (error) {
-    console.error('登录错误:', error);
-    res.status(500).json({ message: '服务器错误' });
-  }
-});
-
-// --- 知识点 API ---
-
-// 1. 上传图片接口
-app.post('/api/upload/image', upload.single('image'), (req, res) => {
-  try {
-    if (!req.file) {
-      return res.status(400).json({ message: '没有上传文件' });
-    }
-    
-    // 返回图片的访问 URL
-    const imageUrl = `${req.protocol}://${req.get('host')}/uploads/${req.file.filename}`;
-    
-    res.json({ 
-      success: true, 
-      url: imageUrl,
-      filename: req.file.filename 
-    });
   } catch (error) {
     console.error('Upload error:', error);
     res.status(500).json({ message: '图片上传失败' });
@@ -413,13 +467,31 @@ app.get('/api/knowledge/detail/:id', async (req, res) => {
   }
 });
 
-// 6. 删除知识点
+// 删除笔记 (完善权限检查)
 app.delete('/api/knowledge/:id', async (req, res) => {
+  const { userId } = req.query;
+
   try {
-    const result = await KnowledgePoint.findByIdAndDelete(req.params.id);
-    if (!result) return res.status(404).json({ message: '找不到该笔记' });
-    res.json({ success: true });
+    const note = await KnowledgePoint.findById(req.params.id);
+    if (!note) return res.status(404).json({ message: '笔记不存在' });
+
+    const user = await User.findById(userId);
+    if (!user) return res.status(404).json({ message: '用户不存在' });
+
+    // 兼容不同的字段名 (userId, author, createdBy)
+    const noteOwnerId = note.userId || note.author || note.createdBy;
+    
+    const isOwner = noteOwnerId && noteOwnerId.toString() === userId;
+    const isAdmin = user.role === 'admin';
+
+    if (isAdmin || isOwner) {
+      await KnowledgePoint.findByIdAndDelete(req.params.id);
+      res.json({ success: true });
+    } else {
+      res.status(403).json({ message: '无权删除此笔记' });
+    }
   } catch (error) {
+    console.error('Delete note error:', error);
     res.status(500).json({ message: '删除失败' });
   }
 });
@@ -473,7 +545,13 @@ app.get('/api/stats/:userId', async (req, res) => {
     res.status(500).json({ message: '获取统计数据失败' });
   }
 });
-1
+
+// --- Syllabus API ---
+// 获取课程大纲
+app.get('/api/syllabus', (req, res) => {
+  res.json(SYLLABUS_DATA);
+});
+
 // 处理图片上传
 const handleImageUpload = async (e) => {
   const file = e.target.files[0];
@@ -495,6 +573,88 @@ const handleImageUpload = async (e) => {
     setLoading(false);
   }
 };
+
+// 临时路由：将指定用户升级为管理员
+app.post('/api/admin/promote', async (req, res) => {
+  const { username, secretKey } = req.body;
+  if (secretKey !== process.env.SECRET_KEY) return res.status(403).json({ message: 'Forbidden' });
+  
+  try {
+    const user = await User.findOneAndUpdate({ username }, { role: 'admin' }, { new: true });
+    res.json({ success: true, user });
+  } catch (error) {
+    res.status(500).json({ message: 'Error' });
+  }
+});
+
+// ==========================================
+//           管理员专用 API
+// ==========================================
+
+// 中间件：验证管理员权限
+const verifyAdmin = async (req, res, next) => {
+  const userId = req.query.userId || req.body.userId;
+  if (!userId) return res.status(401).json({ message: '未提供用户ID' });
+  
+  try {
+    const user = await User.findById(userId);
+    if (user && user.role === 'admin') {
+      next();
+    } else {
+      res.status(403).json({ message: '需要管理员权限' });
+    }
+  } catch (error) {
+    res.status(500).json({ message: '权限验证失败' });
+  }
+};
+
+// 1. 获取所有用户
+app.get('/api/admin/users', verifyAdmin, async (req, res) => {
+  try {
+    const users = await User.find({}, '-password').sort({ createdAt: -1 });
+    res.json(users);
+  } catch (error) {
+    res.status(500).json({ message: '获取用户失败' });
+  }
+});
+
+// 2. 获取所有题目 (之前可能加过，这里确认一下)
+app.get('/api/admin/questions', verifyAdmin, async (req, res) => {
+  try {
+    const questions = await Question.find()
+      .populate('createdBy', 'username') // 关联显示作者名
+      .sort({ createdAt: -1 });
+    res.json(questions);
+  } catch (error) {
+    res.status(500).json({ message: '获取题目失败' });
+  }
+});
+
+// 3. 获取所有笔记
+app.get('/api/admin/knowledge', verifyAdmin, async (req, res) => {
+  try {
+    const notes = await KnowledgePoint.find()
+      .populate('author', 'username') // 关联显示作者名
+      .sort({ createdAt: -1 });
+    res.json(notes);
+  } catch (error) {
+    res.status(500).json({ message: '获取笔记失败' });
+  }
+});
+
+// 4. 删除用户 (慎用)
+app.delete('/api/admin/users/:id', verifyAdmin, async (req, res) => {
+  try {
+    await User.findByIdAndDelete(req.params.id);
+    // 可选：同时删除该用户产生的数据
+    await Question.deleteMany({ createdBy: req.params.id });
+    await KnowledgePoint.deleteMany({ author: req.params.id });
+    res.json({ success: true });
+  } catch (error) {
+    res.status(500).json({ message: '删除用户失败' });
+  }
+});
+
 
 app.listen(PORT, () => {
   console.log(`后端服务器运行在 http://localhost:${PORT}`);

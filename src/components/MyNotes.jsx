@@ -24,17 +24,23 @@ const MyNotes = ({ user }) => {
   };
 
   const handleDelete = async (id) => {
-    if (!window.confirm('確定要刪除這篇筆記嗎？此操作無法撤銷。')) return;
+    if (!window.confirm('確定要刪除這條筆記嗎？')) return;
 
     try {
-      const res = await fetch(`/api/knowledge/${id}`, { method: 'DELETE' });
+      const userId = user.id || user._id; // 兼容 id 或 _id
+      const res = await fetch(`/api/knowledge/${id}?userId=${userId}`, {
+        method: 'DELETE',
+      });
+
       if (res.ok) {
-        setNotes(notes.filter(n => n._id !== id));
+        setNotes(prev => prev.filter(n => n._id !== id));
       } else {
-        alert('刪除失敗');
+        const data = await res.json();
+        alert(data.message || '刪除失敗');
       }
     } catch (error) {
-      alert('刪除錯誤');
+      console.error('Delete error:', error);
+      alert('刪除出錯');
     }
   };
 
@@ -91,13 +97,14 @@ const MyNotes = ({ user }) => {
                 >
                   查看 <ArrowRight size={14} className="ml-1" />
                 </Link>
-                <button 
-                  onClick={() => handleDelete(note._id)}
-                  className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition"
-                  title="刪除"
-                >
-                  <Trash2 size={18} />
-                </button>
+                {(user?.role === 'admin' || user?.id === note.author) && (
+                  <button 
+                    onClick={() => handleDelete(note._id)}
+                    className="text-red-500 hover:bg-red-50 p-2 rounded"
+                  >
+                    删除
+                  </button>
+                )}
               </div>
             </div>
           ))}

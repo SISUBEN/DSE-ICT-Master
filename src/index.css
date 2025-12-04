@@ -13,8 +13,17 @@
 body {
   margin: 0;
   font-family: 'Inter', sans-serif;
-  background-color: var(--background-color);
+  background-color: #f8fafc;
   color: var(--text-color);
+  @apply text-slate-800 antialiased;
+  /* 添加一个微妙的网格背景 */
+  background-image: 
+    radial-gradient(at 0% 0%, rgba(59, 130, 246, 0.15) 0px, transparent 50%),
+    radial-gradient(at 100% 0%, rgba(168, 85, 247, 0.15) 0px, transparent 50%),
+    linear-gradient(#e2e8f0 1px, transparent 1px),
+    linear-gradient(90deg, #e2e8f0 1px, transparent 1px);
+  background-size: 100% 100%, 100% 100%, 40px 40px, 40px 40px;
+  background-attachment: fixed;
 }
 
 h1, h2, h3, h4, h5, h6 {
@@ -38,4 +47,20 @@ a:hover {
 
 button {
   cursor: pointer;
+}
+
+/* 自定义滚动条 */
+::-webkit-scrollbar {
+  width: 8px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  @apply bg-slate-300 rounded-full hover:bg-slate-400 transition;
+}
+
+/* 玻璃拟态效果工具类 */
+.glass-panel {
+  @apply bg-white/80 backdrop-blur-md border border-white/50 shadow-xl;
 }

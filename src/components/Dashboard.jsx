@@ -1,18 +1,41 @@
 import React, { useState, useEffect } from 'react';
-import { SYLLABUS } from '../data/syllabus';
+import { Link } from 'react-router-dom';
 import { 
-  BookOpen, ArrowRight, Zap, Trophy
+  BookOpen, ArrowRight, Zap, Trophy, Sparkles, Target,
+  Database, Globe, Code, Cpu, GraduationCap, BarChart3 // <--- 新增导入这些图标
 } from 'lucide-react';
 
-// 接收 user prop
 const Dashboard = ({ user, onSelectModule }) => {
+  // 1. 添加 syllabus 状态
+  const [syllabus, setSyllabus] = useState({ compulsory: [], electives: [] });
+  const [loading, setLoading] = useState(true);
+  
   const [stats, setStats] = useState({
     completedModules: 0,
     totalQuestions: 0,
     accuracy: '-'
   });
 
-  // 获取统计数据
+  // 2. 获取 Syllabus 数据
+  useEffect(() => {
+    const fetchSyllabus = async () => {
+      try {
+        const res = await fetch('/api/syllabus');
+        if (res.ok) {
+          const data = await res.json();
+          setSyllabus(data);
+        }
+      } catch (error) {
+        console.error('Failed to fetch syllabus:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchSyllabus();
+  }, []);
+
+  // 获取统计数据 (保持不变)
   useEffect(() => {
     if (user?.id) {
       fetch(`/api/stats/${user.id}`)
@@ -25,143 +48,71 @@ const Dashboard = ({ user, onSelectModule }) => {
     }
   }, [user]);
 
+  // 3. 加载状态显示
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center min-h-screen">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-slate-600"></div>
+      </div>
+    );
+  }
+
   return (
-    <div className="container mx-auto px-4 py-8 max-w-7xl">
-      
-      {/* --- Hero Section --- */}
-      <div className="bg-gradient-to-r from-blue-600 to-purple-700 rounded-3xl p-8 md:p-12 text-white shadow-2xl mb-12 relative overflow-hidden">
-        <div className="absolute top-0 right-0 w-64 h-64 bg-white opacity-5 rounded-full -mr-16 -mt-16 blur-3xl"></div>
-        <div className="absolute bottom-0 left-0 w-48 h-48 bg-blue-400 opacity-10 rounded-full -ml-10 -mb-10 blur-2xl"></div>
-        
-        <div className="relative z-10">
-          <h1 className="text-3xl md:text-5xl font-bold mb-4">
-            {user ? `歡迎回來，${user.username}` : '準備好掌握 ICT 了嗎？'}
-          </h1>
-          <p className="text-blue-100 text-lg max-w-2xl mb-8">
-            DSE ICT Master 提供全面的課程筆記、模擬試題和進度追蹤，助你輕鬆奪星。
-          </p>
-          
-          {/* 只有登录后才显示具体数据，否则显示提示 */}
-          {user ? (
-            <div className="flex flex-wrap gap-4">
-              <div className="bg-white/10 backdrop-blur-sm border border-white/20 rounded-xl p-4 flex items-center min-w-[160px]">
-                <div className="p-2 bg-blue-500/30 rounded-lg mr-3">
-                  <Trophy size={20} className="text-yellow-300" />
-                </div>
-                <div>
-                  <div className="text-2xl font-bold">{stats.accuracy}</div>
-                  <div className="text-xs text-blue-200">平均準確率</div>
-                </div>
-              </div>
-              <div className="bg-white/10 backdrop-blur-sm border border-white/20 rounded-xl p-4 flex items-center min-w-[160px]">
-                <div className="p-2 bg-purple-500/30 rounded-lg mr-3">
-                  <Zap size={20} className="text-purple-300" />
-                </div>
-                <div>
-                  <div className="text-2xl font-bold">{stats.totalQuestions}</div>
-                  <div className="text-xs text-blue-200">已做題目</div>
-                </div>
-              </div>
-            </div>
-          ) : (
-            <div className="inline-block bg-white/20 backdrop-blur-md px-6 py-3 rounded-lg font-medium">
-              登入以查看你的學習分析報告
-            </div>
-          )}
-        </div>
+    <div className="container mx-auto px-4 py-12 max-w-6xl">
+      <div className="mb-10">
+        <h1 className="text-3xl font-bold text-slate-800 mb-2">
+          早晨，{user ? user.username : '同學'} 👋
+        </h1>
+        <p className="text-slate-500">準備好今天的學習了嗎？選擇一個模塊開始吧。</p>
       </div>
 
-      {/* --- Compulsory Section --- */}
-      <div className="mb-12">
-        <div className="flex items-center mb-6">
-          <div className="w-1 h-8 bg-blue-600 rounded-full mr-3"></div>
-          <h2 className="text-2xl font-bold text-slate-800">必修部分 (Compulsory)</h2>
-        </div>
-        
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {SYLLABUS.compulsory.map((module) => (
-            <ModuleCard 
-              key={module.id} 
-              module={module} 
-              onClick={() => onSelectModule(module)} 
-              color="blue"
-            />
-          ))}
-        </div>
-      </div>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {/* 1. 課程與練習卡片 */}
+        <Link to="/syllabus" className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 hover:shadow-md transition group relative overflow-hidden">
+          <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition">
+            <GraduationCap size={100} />
+          </div>
+          <div className="w-12 h-12 bg-purple-100 text-purple-600 rounded-xl flex items-center justify-center mb-4 group-hover:bg-purple-600 group-hover:text-white transition relative z-10">
+            <GraduationCap size={24} />
+          </div>
+          <h3 className="text-xl font-bold text-slate-800 mb-2 relative z-10">課程與練習</h3>
+          <p className="text-slate-500 text-sm mb-4 relative z-10">瀏覽 DSE ICT 核心課程，按單元進行針對性練習。</p>
+          <div className="flex items-center text-purple-600 text-sm font-bold group-hover:translate-x-1 transition relative z-10">
+            開始學習 <ArrowRight size={16} className="ml-1" />
+          </div>
+        </Link>
 
-      {/* --- Elective Section --- */}
-      <div className="mb-12">
-        <div className="flex items-center mb-6">
-          <div className="w-1 h-8 bg-purple-600 rounded-full mr-3"></div>
-          <h2 className="text-2xl font-bold text-slate-800">選修部分 (Elective)</h2>
-        </div>
-        
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {SYLLABUS.electives.map((module) => (
-            <ModuleCard 
-              key={module.id} 
-              module={module} 
-              onClick={() => onSelectModule(module)} 
-              color="purple"
-            />
-          ))}
-        </div>
-      </div>
+        {/* 2. SQL Dojo 卡片 (新增) */}
+        <Link to="/sql-dojo" className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 hover:shadow-md transition group relative overflow-hidden">
+          <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition">
+            <Database size={100} />
+          </div>
+          <div className="w-12 h-12 bg-blue-100 text-blue-600 rounded-xl flex items-center justify-center mb-4 group-hover:bg-blue-600 group-hover:text-white transition relative z-10">
+            <Database size={24} />
+          </div>
+          <h3 className="text-xl font-bold text-slate-800 mb-2 relative z-10">SQL 闖關練習</h3>
+          <p className="text-slate-500 text-sm mb-4 relative z-10">互動式 SQL 挑戰，從基礎查詢到複雜 JOIN 操作。</p>
+          <div className="flex items-center text-blue-600 text-sm font-bold group-hover:translate-x-1 transition relative z-10">
+            進入挑戰 <ArrowRight size={16} className="ml-1" />
+          </div>
+        </Link>
 
+        {/* 3. 學習進度卡片 */}
+        <Link to="/stats" className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 hover:shadow-md transition group relative overflow-hidden">
+          <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition">
+            <BarChart3 size={100} />
+          </div>
+          <div className="w-12 h-12 bg-green-100 text-green-600 rounded-xl flex items-center justify-center mb-4 group-hover:bg-green-600 group-hover:text-white transition relative z-10">
+            <BarChart3 size={24} />
+          </div>
+          <h3 className="text-xl font-bold text-slate-800 mb-2 relative z-10">學習進度</h3>
+          <p className="text-slate-500 text-sm mb-4 relative z-10">查看你的答題統計、強弱項分析及學習歷程。</p>
+          <div className="flex items-center text-green-600 text-sm font-bold group-hover:translate-x-1 transition relative z-10">
+            查看報告 <ArrowRight size={16} className="ml-1" />
+          </div>
+        </Link>
+      </div>
     </div>
-  );
-};
-
-// --- Sub-component: Module Card ---
-const ModuleCard = ({ module, onClick, color }) => {
-  const Icon = module.icon || BookOpen;
-  
-  const colorStyles = {
-    blue: {
-      bg: 'hover:bg-blue-50',
-      iconBg: 'bg-blue-100',
-      iconColor: 'text-blue-600',
-      border: 'hover:border-blue-200',
-      btn: 'text-blue-600 group-hover:translate-x-1'
-    },
-    purple: {
-      bg: 'hover:bg-purple-50',
-      iconBg: 'bg-purple-100',
-      iconColor: 'text-purple-600',
-      border: 'hover:border-purple-200',
-      btn: 'text-purple-600 group-hover:translate-x-1'
-    }
-  };
-
-  const style = colorStyles[color];
-
-  return (
-    <button 
-      onClick={onClick}
-      className={`group text-left bg-white p-6 rounded-2xl border border-slate-100 shadow-sm hover:shadow-md transition-all duration-300 ${style.bg} ${style.border} flex flex-col h-full`}
-    >
-      <div className="flex justify-between items-start mb-4">
-        <div className={`p-3 rounded-xl ${style.iconBg} ${style.iconColor} transition-colors`}>
-          <Icon size={24} />
-        </div>
-        <span className="text-xs font-bold text-slate-400 uppercase tracking-wider bg-slate-50 px-2 py-1 rounded-md">
-          {module.code}
-        </span>
-      </div>
-      
-      <h3 className="text-xl font-bold text-slate-800 mb-2 group-hover:text-slate-900">
-        {module.title}
-      </h3>
-      
-      <p className="text-slate-500 text-sm mb-6 flex-grow leading-relaxed">
-        {module.desc}
-      </p>
-      
-      <div className={`flex items-center text-sm font-bold ${style.btn} transition-transform duration-300`}>
-        開始練習 <ArrowRight size={16} className="ml-2" />
-      </div>
-    </button>
   );
 };
 
