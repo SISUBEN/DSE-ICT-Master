@@ -53,15 +53,27 @@ DSE ICT Master 是一個專為香港中學文憑試 (HKDSE) 資訊及通訊科�
 - 支援 Markdown 格式編寫
 - 圖片上傳功能
 - 按單元分類筆記
+- **知識庫 (Knowledge Hub)**
+  - 瀏覽所有用戶分享的學習筆記
+  - 全局知識點搜索和篩選功能
+  - 按標籤（如 python, sql, excel）快速查找
+  - 按單元分類瀏覽
 - **標籤系統與搜索功能**
   - 為筆記添加多個標籤（如 python, sql, excel, elective A）
   - 快速搜索與篩選筆記
   - 支持部分文字匹配和不區分大小寫查詢
   - Web UI 和 CLI 工具雙重支持
+- **編輯和管理功能**
+  - 從用戶儀表板直接編輯已發布的知識點
+  - 實時 Markdown 預覽
+  - 標籤管理和分類更新
 
 #### 👤 用戶系統
 - 用戶註冊與登入
 - 個人儀表板
+  - **我的知識點** 標籤顯示所有已發布的筆記
+  - 快速編輯和刪除功能
+  - 按時間順序排列的知識點列表
 - 學習進度追蹤
 - 答題統計數據
 
@@ -382,7 +394,44 @@ npm run search -- --query "database design"
 npm run search -- --help
 ```
 
-### 🔍 搜索功能使用指南
+### 🔍 知識庫與搜索功能使用指南
+
+#### 知識庫 (Knowledge Hub)
+知識庫是一個集中展示所有用戶分享的學習筆記的平台，無需登入即可瀏覽。
+
+1. **訪問知識庫**
+   - 從主頁點擊突出顯示的「知識庫」卡片
+   - 或通過導航欄中的「知識庫」連結訪問
+
+2. **瀏覽和搜索知識**
+   - 使用搜索框輸入關鍵字搜索標題、內容或標籤
+   - 點擊「進階篩選」按單元分類瀏覽
+   - 點擊熱門標籤快速篩選相關筆記
+   - 實時顯示符合條件的筆記數量
+
+3. **查看知識點詳情**
+   - 點擊任何知識點卡片查看完整內容
+   - 登入後可以編輯自己創建的筆記
+
+#### 用戶儀表板 - 我的知識點
+登入後，在用戶儀表板中管理你的所有已發布知識點。
+
+1. **訪問方式**
+   - 導航至「我的進度」或點擊頭部的用戶頭像
+   - 選擇「我的知識點」標籤
+
+2. **管理功能**
+   - 查看所有已發布的知識點列表
+   - 直接點擊「編輯」按鈕修改筆記內容
+   - 使用「刪除」按鈕移除不需要的筆記
+   - 查看每篇筆記的創建時間和標籤
+
+3. **創建新知識點**
+   - 點擊「+ 新增知識點」按鈕
+   - 選擇所屬單元
+   - 輸入標題和標籤
+   - 使用 Markdown 編寫內容
+   - 實時預覽功能確保格式正確
 
 #### Web UI 搜索
 1. **個人筆記搜索**：導航至「我的筆記庫」頁面
@@ -458,9 +507,10 @@ DSE ICT Master is a comprehensive web application designed to help Hong Kong stu
 - **Practice Quizzes**: Questions covering all compulsory and elective modules
 - **Syllabus Overview**: Complete HKDSE ICT curriculum based on 2021 guidelines
 - **Knowledge Management**: Create and manage personal study notes with Markdown support
-- **User System**: Registration, login, and personal dashboard
+- **Knowledge Hub**: Browse all user-shared study notes and knowledge points with advanced search and filtering
+- **User Dashboard**: Manage published knowledge with edit/delete functionality, view learning statistics
 - **Progress Tracking**: Track quiz performance and study statistics
-- **Community Contribution**: Upload and share practice questions
+- **Community Contribution**: Upload and share practice questions and study materials
 
 ### 🛠️ Tech Stack
 
@@ -487,6 +537,13 @@ docker-compose up --build -d
 
 - Frontend: http://localhost:80
 - Backend API: http://localhost:5000
+
+**Using the Platform:**
+1. **Browse Knowledge Hub**: Visit the homepage and click on the "Knowledge Hub" card to explore all shared study notes
+2. **Search Knowledge**: Use the search bar to find notes by keywords or tags (e.g., python, sql, database)
+3. **Create Notes**: Log in and navigate to "創作與管理" → "添加筆記" to create your own study notes
+4. **Manage Your Knowledge**: Access your user dashboard by clicking on your username → "我的知識點" tab to view, edit, or delete your published notes
+5. **Edit Notes**: Click the "編輯" button on any of your notes to update content, tags, or module classification
 
 #### Local Development
 

@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import ReactMarkdown from 'react-markdown';
-import { ArrowLeft, Calendar, User, Tag } from 'lucide-react';
+import { ArrowLeft, Calendar, User, Tag, Edit3 } from 'lucide-react';
 import { getModuleById } from '../data/syllabus';
 
-const KnowledgeDetail = () => {
+const KnowledgeDetail = ({ user }) => {
   const { id } = useParams();
   const navigate = useNavigate();
   const [note, setNote] = useState(null);
@@ -31,12 +31,24 @@ const KnowledgeDetail = () => {
   if (!note) return null;
 
   const moduleInfo = getModuleById(note.moduleId);
+  const canEdit = user && (note.author?._id === user.id || user.role === 'admin');
 
   return (
     <div className="container mx-auto px-4 py-8 max-w-4xl">
-      <Link to="/knowledge/manage" className="inline-flex items-center text-slate-500 hover:text-slate-800 mb-6 transition">
-        <ArrowLeft size={18} className="mr-1" /> 返回我的筆記
-      </Link>
+      <div className="flex justify-between items-center mb-6">
+        <Link to="/knowledge/manage" className="inline-flex items-center text-slate-500 hover:text-slate-800 transition">
+          <ArrowLeft size={18} className="mr-1" /> 返回我的筆記
+        </Link>
+        
+        {canEdit && (
+          <Link
+            to={`/knowledge/${id}/edit`}
+            className="inline-flex items-center px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition font-medium"
+          >
+            <Edit3 size={18} className="mr-2" /> 編輯
+          </Link>
+        )}
+      </div>
 
       <div className="bg-white rounded-2xl shadow-lg border border-slate-100 overflow-hidden">
         <div className="p-8 border-b border-slate-100 bg-slate-50/50">
