@@ -1,57 +1,49 @@
 import React, { useState, useEffect } from 'react';
-import { Routes, Route, Navigate, useNavigate, useParams, Link, useLocation } from 'react-router-dom'; // <--- 引入路由组件
+import { Routes, Route, Navigate, useNavigate, useParams, Link, useLocation } from 'react-router-dom';
 import Header from './components/Header';
 import Dashboard from './components/Dashboard';
 import SyllabusView from './components/SyllabusView';
 import QuizInterface from './components/QuizInterface';
 import Login from './components/Login';
 import AdminDashboard from './components/AdminDashboard';
-import { 
-  BarChart3, 
-  BookOpen, 
-  Code, 
-  Cpu, 
-  Globe, 
-  Database, 
-  Layout, 
-  Server, 
-  ShieldAlert, 
-  Trophy, 
-  CheckCircle2, 
-  XCircle, 
-  ArrowRight, 
-  Home, 
+import {
+  BarChart3,
+  BookOpen,
+  Code,
+  Cpu,
+  Globe,
+  Database,
+  Layout,
+  Server,
+  ShieldAlert,
+  Trophy,
+  CheckCircle2,
+  XCircle,
+  ArrowRight,
+  Home,
   Menu,
   X,
   Lightbulb,
   Clock,
-  LogOut, 
-  User as UserIcon 
+  LogOut,
+  User as UserIcon
 } from 'lucide-react';
-import { getModuleById } from './data/syllabus'; // <--- Import the helper
-import QuestionUpload from './components/QuestionUpload'; // <--- 引入组件
-import KnowledgeUpload from './components/KnowledgeUpload'; // <--- 引入
-import MyNotes from './components/MyNotes'; // <--- 引入
-import KnowledgeDetail from './components/KnowledgeDetail'; // <--- 引入
-import ManageQuestions from './components/ManageQuestions'; // <--- 引入
-import UserDashboard from './components/UserDashboard'; // <--- 引入
-import SqlDojo from './components/SqlDojo'; // <--- 1. 引入组件
-
-// --- 简单的统计页面组件 ---
-const StatsView = () => (
-  <div className="container mx-auto px-4 py-12 text-center">
-    <BarChart3 size={64} className="mx-auto text-slate-300 mb-4" />
-    <h2 className="text-2xl font-bold text-slate-800">详细统计即将推出</h2>
-    <p className="text-slate-500">我们正在建立详细图表以追蹤您的 DSE ICT 進度。</p>
-    <Link to="/" className="mt-6 inline-block text-blue-600 hover:underline">返回主頁</Link>
-  </div>
-);
+import { getModuleById } from './data/syllabus';
+import QuestionUpload from './components/QuestionUpload';
+import KnowledgeUpload from './components/KnowledgeUpload';
+import MyNotes from './components/MyNotes';
+import KnowledgeDetail from './components/KnowledgeDetail';
+import ManageQuestions from './components/ManageQuestions';
+import UserDashboard from './components/UserDashboard';
+import SqlDojo from './components/SqlDojo';
+import SearchKnowledge from './components/SearchKnowledge';
+import Stats from './components/Stats'; // <--- Added import
 
 // --- Quiz Wrapper with Data Lookup ---
-const QuizWrapper = ({ user }) => { // <--- 接收 user
+const QuizWrapper = ({ user }) => {
   const { moduleId } = useParams();
   const navigate = useNavigate();
-  
+
   // Find the actual module data
   const module = getModuleById(moduleId);
 
@@ -69,10 +61,10 @@ const QuizWrapper = ({ user }) => { // <--- 接收 user
 
   return (
     <div className="min-h-screen bg-slate-50 py-8 px-4">
-      <QuizInterface 
-        module={module} 
-        user={user} // <--- 传递 user 给 QuizInterface
-        onExit={() => navigate('/')} 
+      <QuizInterface
+        module={module}
+        user={user}
+        onExit={() => navigate('/')}
       />
     </div>
   );
@@ -80,23 +72,18 @@ const QuizWrapper = ({ user }) => { // <--- 接收 user
 
 // --- Main App Component ---
 const App = () => {
-  // 1. 统一在初始化时读取 localStorage，避免 useEffect 中的重复逻辑和报错
   const [user, setUser] = useState(() => {
     try {
-      // 优先读取 dse_user (这是登录时保存的 key)
       const dseUser = localStorage.getItem('dse_user');
       if (dseUser && dseUser !== 'undefined') {
         return JSON.parse(dseUser);
       }
-      
-      // 兼容旧的 user key (如果有的话)
       const legacyUser = localStorage.getItem('user');
       if (legacyUser && legacyUser !== 'undefined') {
         return JSON.parse(legacyUser);
       }
     } catch (e) {
       console.error('Failed to load user from storage:', e);
-      // 如果解析失败，清除可能损坏的数据
       localStorage.removeItem('dse_user');
       localStorage.removeItem('user');
     }
@@ -112,83 +99,75 @@ const App = () => {
     }
     setUser(userData);
     localStorage.setItem('dse_user', JSON.stringify(userData));
-    navigate('/'); 
+    navigate('/');
   };
 
   const handleLogout = () => {
     setUser(null);
     localStorage.removeItem('dse_user');
-    navigate('/'); 
+    navigate('/');
   };
 
-  // 辅助函数：处理模块选择并跳转
   const handleSelectModule = (module) => {
-    const moduleId = module.id || module; 
+    const moduleId = module.id || module;
     navigate(`/quiz/${moduleId}`);
   };
 
   return (
     <div className="min-h-screen bg-slate-50 font-sans text-slate-900">
       <Header user={user} onLogout={handleLogout} />
-      
+
       <main className="min-h-[calc(100vh-200px)]">
         <Routes>
-          {/* 首页：任何人可见 */}
-          <Route 
-            path="/" 
-            element={<Dashboard user={user} onSelectModule={handleSelectModule} />} 
+          <Route
+            path="/"
+            element={<Dashboard user={user} onSelectModule={handleSelectModule} />}
           />
-          
-          {/* 登录页：已登录则重定向到首页，未登录显示登录组件 */}
+
           <Route path="/login" element={
             user ? <Navigate to="/" replace /> : <Login onLogin={handleLogin} />
           } />
 
-          {/* 课程列表：任何人可见 */}
           <Route path="/syllabus" element={<SyllabusView onSelectModule={handleSelectModule} />} />
-          
-          {/* 测验和统计：需要登录，否则重定向到登录页 */}
+
           <Route path="/quiz/:moduleId" element={
-            user ? <QuizWrapper user={user} /> : <Navigate to="/login" replace /> // <--- 传递 user
+            user ? <QuizWrapper user={user} /> : <Navigate to="/login" replace />
           } />
-          
+
           <Route path="/stats" element={
-            user ? <StatsView /> : <Navigate to="/login" replace />
+            user ? <Stats user={user} /> : <Navigate to="/login" replace />
           } />
-          
-          {/* 新增：上传题目路由 (需要登录) */}
+
           <Route path="/upload" element={
             user ? <QuestionUpload user={user} /> : <Navigate to="/login" replace />
           } />
 
-          {/* 新增：知识点上传路由 */}
           <Route path="/knowledge/new" element={
             user ? <KnowledgeUpload user={user} /> : <Navigate to="/login" replace />
           } />
-          
-          {/* 管理笔记 */}
+
           <Route path="/knowledge/manage" element={
             user ? <MyNotes user={user} /> : <Navigate to="/login" replace />
           } />
-          
-          {/* 查看笔记详情 */}
+
           <Route path="/knowledge/:id" element={
             user ? <KnowledgeDetail /> : <Navigate to="/login" replace />
           } />
-          
-          {/* 新增：管理题目路由 */}
+
+          <Route path="/knowledge/search" element={
+            user ? <SearchKnowledge user={user} /> : <Navigate to="/login" replace />
+          } />
+
           <Route path="/questions/manage" element={
             user ? <ManageQuestions user={user} /> : <Navigate to="/login" replace />
           } />
-          
-          {/* 新增：用户个人中心路由 */}
+
           <Route path="/profile" element={
             user ? <UserDashboard user={user} onLogout={handleLogout} /> : <Navigate to="/login" replace />
           } />
 
-          {/* --- 2. 添加 SQL Dojo 路由 (放在 "*" 路由之前) --- */}
           <Route path="/sql-dojo" element={<SqlDojo />} />
-          
+
           <Route path="*" element={<Navigate to="/" replace />} />
           <Route path="/admin" element={<AdminDashboard user={user} />} />
         </Routes>

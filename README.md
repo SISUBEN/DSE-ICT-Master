@@ -53,6 +53,11 @@ DSE ICT Master 是一個專為香港中學文憑試 (HKDSE) 資訊及通訊科�
 - 支援 Markdown 格式編寫
 - 圖片上傳功能
 - 按單元分類筆記
+- **標籤系統與搜索功能**
+  - 為筆記添加多個標籤（如 python, sql, excel, elective A）
+  - 快速搜索與篩選筆記
+  - 支持部分文字匹配和不區分大小寫查詢
+  - Web UI 和 CLI 工具雙重支持
 
 #### 👤 用戶系統
 - 用戶註冊與登入
@@ -370,7 +375,45 @@ npm run build
 
 # 預覽生產構建
 npm run preview
+
+# CLI 搜索工具
+npm run search -- --tags python
+npm run search -- --query "database design"
+npm run search -- --help
 ```
+
+### 🔍 搜索功能使用指南
+
+#### Web UI 搜索
+1. **個人筆記搜索**：導航至「我的筆記庫」頁面
+   - 使用搜索框輸入關鍵字
+   - 點擊標籤按鈕進行篩選
+   - 即時查看結果
+
+2. **全局搜索**：點擊導航欄的「搜索筆記」
+   - 輸入搜索查詢（如：python, sql, excel）
+   - 使用進階篩選按單元分類
+   - 點擊熱門標籤快速搜索
+
+#### CLI 命令行搜索
+```bash
+# 按標籤搜索
+npm run search -- --tags python
+
+# 多個標籤搜索
+npm run search -- --tags python,sql,excel
+
+# 部分匹配搜索（不區分大小寫）
+npm run search -- --tags elect
+
+# 文本搜索
+npm run search -- --query "normalization"
+
+# 組合篩選
+npm run search -- --tags python --module core-d --limit 5
+```
+
+詳細文檔請參閱 [SEARCH_FUNCTIONALITY.md](./SEARCH_FUNCTIONALITY.md)
 
 ### 🤝 貢獻指南
 

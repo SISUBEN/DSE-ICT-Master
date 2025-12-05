@@ -10,13 +10,13 @@ import { fileURLToPath } from 'url';
 import { seedAdminUser } from './admin.js';
 
 // --- 导入模型 ---
-import { 
-  User, 
-  Question, 
-  UserSetting, 
-  UserAction, 
-  KnowledgePoint, 
-  Module 
+import {
+  User,
+  Question,
+  UserSetting,
+  UserAction,
+  KnowledgePoint,
+  Module
 } from './models.js'; // <--- 新增导入
 
 // 加载环境变量
@@ -34,6 +34,9 @@ const uploadDir = path.join(__dirname, 'uploads');
 if (!fs.existsSync(uploadDir)) {
   fs.mkdirSync(uploadDir);
 }
+
+// --- 添加这一行：配置静态文件服务 ---
+app.use('/uploads', express.static(uploadDir));
 
 // --- Multer 存储配置 (添加这部分代码) ---
 const storage = multer.diskStorage({
@@ -53,7 +56,7 @@ const upload = multer({ storage: storage }); // 这里使用了上面定义的 s
 app.use(cors());
 app.use(express.json());
 // 开放静态文件访问，让前端能加载图片
-app.use('/uploads', express.static(path.join(__dirname, 'uploads'))); 
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // --- MongoDB 连接 ---
 mongoose.connect(process.env.MONGO_URI)
@@ -89,7 +92,7 @@ const seedDatabase = async () => {
       console.log('正在初始化课程数据...');
       const compulsory = INITIAL_SYLLABUS_DATA.compulsory.map(m => ({ ...m, category: 'compulsory' }));
       const electives = INITIAL_SYLLABUS_DATA.electives.map(m => ({ ...m, category: 'elective' }));
-      
+
       await Module.insertMany([...compulsory, ...electives]);
       console.log('课程数据初始化完成');
     }
@@ -137,13 +140,13 @@ const MOCK_DATA = {
 app.get('/api/syllabus', async (req, res) => {
   try {
     const modules = await Module.find({});
-    
+
     // 将扁平的数据库数据转换为前端需要的结构
     const response = {
       compulsory: modules.filter(m => m.category === 'compulsory'),
       electives: modules.filter(m => m.category === 'elective')
     };
-    
+
     res.json(response);
   } catch (error) {
     console.error('Fetch syllabus error:', error);
@@ -248,24 +251,40 @@ app.delete('/api/questions/:id', async (req, res) => {
   }
 });
 
-// --- 新增：获取所有题目 (仅限管理员) ---
-app.get('/api/admin/questions', async (req, res) => {
-  const { userId } = req.query;
+// 更新题目
+app.put('/api/questions/:id', async (req, res) => {
+  const { userId, question, options, correct, explanation, difficulty, moduleId } = req.body;
 
   try {
-    const user = await User.findById(userId);
-    if (!user || user.role !== 'admin') {
-      return res.status(403).json({ message: '无权访问' });
-    }
+    const q = await Question.findById(req.params.id);
+    if (!q) return res.status(404).json({ message: '题目不存在' });
 
-    // 获取所有题目，按时间倒序
-    const questions = await Question.find().sort({ createdAt: -1 });
-    res.json(questions);
+    const user = await User.findById(userId);
+    if (!user) return res.status(404).json({ message: '用户不存在' });
+
+    const isOwner = q.createdBy && q.createdBy.toString() === userId;
+    const isAdmin = user.role === 'admin';
+
+    if (isAdmin || isOwner) {
+      q.question = question || q.question;
+      q.options = options || q.options;
+      if (correct !== undefined) q.correct = correct;
+      q.explanation = explanation || q.explanation;
+      q.difficulty = difficulty || q.difficulty;
+      q.moduleId = moduleId || q.moduleId;
+
+      await q.save();
+      res.json({ success: true, data: q });
+    } else {
+      res.status(403).json({ message: '无权修改此题目' });
+    }
   } catch (error) {
-    console.error('Fetch all questions error:', error);
-    res.status(500).json({ message: '获取题目失败' });
+    console.error('Update question error:', error);
+    res.status(500).json({ message: '修改失败' });
   }
 });
+
+
 
 // --- 用户行为 API ---
 // 记录用户行为 (合并修复版)
@@ -373,14 +392,14 @@ app.post('/api/login', async (req, res) => {
 
 app.post('/api/register', async (req, res) => {
   const { username, password, email } = req.body;
-  
+
   if (!username || !password || !email) {
     return res.status(400).json({ message: '請填寫所有必填欄位' });
   }
 
   try {
     const existingUser = await User.findOne({ $or: [{ username }, { email }] });
-    
+
     if (existingUser) {
       if (existingUser.username === username) return res.status(400).json({ message: '用戶名已存在' });
       if (existingUser.email === email) return res.status(400).json({ message: '該郵箱已被註冊' });
@@ -391,13 +410,15 @@ app.post('/api/register', async (req, res) => {
 
     const newUser = new User({ username, email, password: hashedPassword });
     await newUser.save();
-    
+
     // 初始化用户设置
     await new UserSetting({ userId: newUser._id }).save();
-    
+
+    res.status(201).json({ success: true, message: '註冊成功' });
+
   } catch (error) {
-    console.error('Upload error:', error);
-    res.status(500).json({ message: '图片上传失败' });
+    console.error('Register error:', error);
+    res.status(500).json({ message: '註冊失敗' });
   }
 });
 
@@ -430,6 +451,82 @@ app.post('/api/knowledge', async (req, res) => {
   } catch (error) {
     console.error('Create knowledge error:', error);
     res.status(500).json({ message: '创建失败' });
+  }
+});
+
+// 6. 搜索知识点（按标签、标题或内容）
+// Note: Consider adding rate limiting for production to prevent abuse
+// Example: npm install express-rate-limit
+app.get('/api/knowledge/search', async (req, res) => {
+  try {
+    const { q, tags, moduleId, userId } = req.query;
+
+    // 构建查询条件
+    const query = {};
+
+    // 如果指定了用户ID，只搜索该用户的笔记
+    if (userId) {
+      query.author = userId;
+    }
+
+    // 如果指定了单元ID
+    if (moduleId) {
+      query.moduleId = moduleId;
+    }
+
+    // 标签搜索（支持多个标签，逗号分隔）
+    if (tags) {
+      const tagArray = tags.split(',').map(t => t.trim()).filter(t => t);
+      if (tagArray.length > 0) {
+        // MongoDB handles regex compilation efficiently
+        // Using $in with regex for partial matching and case-insensitive search
+        query.tags = {
+          $in: tagArray.map(tag => new RegExp(tag, 'i'))
+        };
+      }
+    }
+
+    // 文本搜索（搜索标题或内容）
+    if (q) {
+      query.$or = [
+        { title: { $regex: q, $options: 'i' } },
+        { content: { $regex: q, $options: 'i' } },
+        { tags: { $regex: q, $options: 'i' } }
+      ];
+    }
+
+    const points = await KnowledgePoint.find(query)
+      .populate('author', 'username')
+      .sort({ createdAt: -1 })
+      .limit(100); // 限制返回结果数量
+
+    res.json(points);
+  } catch (error) {
+    console.error('Search knowledge error:', error);
+    res.status(500).json({ message: '搜索失败' });
+  }
+});
+
+// 7. 获取所有标签（用于搜索建议）
+app.get('/api/knowledge/tags', async (req, res) => {
+  try {
+    // 使用聚合管道获取所有唯一的标签
+    const tagsResult = await KnowledgePoint.aggregate([
+      { $unwind: '$tags' },
+      { $group: { _id: '$tags', count: { $sum: 1 } } },
+      { $sort: { count: -1 } },
+      { $limit: 100 }
+    ]);
+
+    const tags = tagsResult.map(item => ({
+      tag: item._id,
+      count: item.count
+    }));
+
+    res.json(tags);
+  } catch (error) {
+    console.error('Get tags error:', error);
+    res.status(500).json({ message: '获取标签失败' });
   }
 });
 
@@ -467,6 +564,10 @@ app.get('/api/knowledge/detail/:id', async (req, res) => {
   }
 });
 
+
+
+
+
 // 删除笔记 (完善权限检查)
 app.delete('/api/knowledge/:id', async (req, res) => {
   const { userId } = req.query;
@@ -480,7 +581,7 @@ app.delete('/api/knowledge/:id', async (req, res) => {
 
     // 兼容不同的字段名 (userId, author, createdBy)
     const noteOwnerId = note.userId || note.author || note.createdBy;
-    
+
     const isOwner = noteOwnerId && noteOwnerId.toString() === userId;
     const isAdmin = user.role === 'admin';
 
@@ -496,6 +597,38 @@ app.delete('/api/knowledge/:id', async (req, res) => {
   }
 });
 
+// 更新笔记
+app.put('/api/knowledge/:id', async (req, res) => {
+  const { userId, title, content, tags, moduleId } = req.body;
+
+  try {
+    const note = await KnowledgePoint.findById(req.params.id);
+    if (!note) return res.status(404).json({ message: '笔记不存在' });
+
+    const user = await User.findById(userId);
+    if (!user) return res.status(404).json({ message: '用户不存在' });
+
+    const noteOwnerId = note.userId || note.author || note.createdBy;
+    const isOwner = noteOwnerId && noteOwnerId.toString() === userId;
+    const isAdmin = user.role === 'admin';
+
+    if (isAdmin || isOwner) {
+      note.title = title || note.title;
+      note.content = content || note.content;
+      note.tags = tags || note.tags;
+      note.moduleId = moduleId || note.moduleId;
+
+      await note.save();
+      res.json({ success: true, data: note });
+    } else {
+      res.status(403).json({ message: '无权修改此笔记' });
+    }
+  } catch (error) {
+    console.error('Update note error:', error);
+    res.status(500).json({ message: '修改失败' });
+  }
+});
+
 // 新增：获取用户统计数据
 app.get('/api/stats/:userId', async (req, res) => {
   try {
@@ -503,11 +636,11 @@ app.get('/api/stats/:userId', async (req, res) => {
 
     // 使用聚合管道计算统计数据
     const stats = await UserAction.aggregate([
-      { 
-        $match: { 
-          userId: userId, 
+      {
+        $match: {
+          userId: userId,
           actionType: 'QUIZ_COMPLETE' // 只统计完成的测验
-        } 
+        }
       },
       {
         $group: {
@@ -552,33 +685,29 @@ app.get('/api/syllabus', (req, res) => {
   res.json(SYLLABUS_DATA);
 });
 
-// 处理图片上传
-const handleImageUpload = async (e) => {
-  const file = e.target.files[0];
-  if (!file) return;
-
-  const imageFormData = new FormData();
-  imageFormData.append('image', file);
-
+// ==========================================
+//           ADD THIS NEW ROUTE
+// ==========================================
+// 图片上传路由
+app.post('/api/upload/image', upload.single('image'), (req, res) => {
   try {
-    setLoading(true);
-    // 修改这里：使用相对路径，或者确保端口与后端一致
-    const res = await fetch('/api/upload/image', { 
-      method: 'POST',
-      body: imageFormData
-    });
+    if (!req.file) {
+      return res.status(400).json({ message: '未上传文件' });
+    }
+    // 返回前端可访问的图片 URL
+    const imageUrl = `/uploads/${req.file.filename}`;
+    res.json({ url: imageUrl });
   } catch (error) {
-    console.error('Image upload error:', error);
-  } finally {
-    setLoading(false);
+    console.error('Upload error:', error);
+    res.status(500).json({ message: '图片上传失败' });
   }
-};
+});
 
 // 临时路由：将指定用户升级为管理员
 app.post('/api/admin/promote', async (req, res) => {
   const { username, secretKey } = req.body;
   if (secretKey !== process.env.SECRET_KEY) return res.status(403).json({ message: 'Forbidden' });
-  
+
   try {
     const user = await User.findOneAndUpdate({ username }, { role: 'admin' }, { new: true });
     res.json({ success: true, user });
@@ -595,7 +724,7 @@ app.post('/api/admin/promote', async (req, res) => {
 const verifyAdmin = async (req, res, next) => {
   const userId = req.query.userId || req.body.userId;
   if (!userId) return res.status(401).json({ message: '未提供用户ID' });
-  
+
   try {
     const user = await User.findById(userId);
     if (user && user.role === 'admin') {
@@ -659,3 +788,4 @@ app.delete('/api/admin/users/:id', verifyAdmin, async (req, res) => {
 app.listen(PORT, () => {
   console.log(`后端服务器运行在 http://localhost:${PORT}`);
 });
+

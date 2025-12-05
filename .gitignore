@@ -22,3 +22,7 @@ lerna-debug.log*
 # temp directory
 .temp
 .tmp
+
+# do not commit test uploaded images
+
+server/uploads/*

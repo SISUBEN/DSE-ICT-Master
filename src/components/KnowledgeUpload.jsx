@@ -1,6 +1,7 @@
 import React, { useState, useRef } from 'react';
+import ReactMarkdown from 'react-markdown'; // <--- 引入
+import remarkGfm from 'remark-gfm';         // <--- 引入
 import { useNavigate } from 'react-router-dom';
-import ReactMarkdown from 'react-markdown';
 import { Book, Image as ImageIcon, FileText, Eye, Edit3, Save, Upload } from 'lucide-react';
 import { SYLLABUS } from '../data/syllabus';
 
@@ -51,7 +52,7 @@ const KnowledgeUpload = ({ user }) => {
         body: imageFormData
       });
       const data = await res.json();
-      
+
       if (data.url) {
         // 在内容末尾插入 Markdown 图片语法
         const imageMarkdown = `\n![${file.name}](${data.url})\n`;
@@ -99,7 +100,7 @@ const KnowledgeUpload = ({ user }) => {
   return (
     <div className="container mx-auto px-4 py-8 max-w-4xl">
       <div className="bg-white rounded-2xl shadow-lg p-6 border border-slate-100">
-        
+
         {/* 头部 */}
         <div className="flex justify-between items-center mb-6 border-b pb-4">
           <div className="flex items-center space-x-3">
@@ -109,13 +110,13 @@ const KnowledgeUpload = ({ user }) => {
             <h2 className="text-2xl font-bold text-slate-800">添加筆記 (Wiki)</h2>
           </div>
           <div className="flex space-x-2">
-            <button 
+            <button
               onClick={() => setMode('edit')}
               className={`px-4 py-2 rounded-lg flex items-center space-x-2 ${mode === 'edit' ? 'bg-blue-100 text-blue-700' : 'text-slate-500 hover:bg-slate-50'}`}
             >
               <Edit3 size={16} /> <span>編輯</span>
             </button>
-            <button 
+            <button
               onClick={() => setMode('preview')}
               className={`px-4 py-2 rounded-lg flex items-center space-x-2 ${mode === 'preview' ? 'bg-blue-100 text-blue-700' : 'text-slate-500 hover:bg-slate-50'}`}
             >
@@ -126,7 +127,7 @@ const KnowledgeUpload = ({ user }) => {
 
         {/* 表单区域 */}
         <div className="space-y-4">
-          
+
           {/* 基础信息 */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
@@ -159,18 +160,31 @@ const KnowledgeUpload = ({ user }) => {
             </div>
           </div>
 
+          {/* --- 新增：標籤輸入框 --- */}
+          <div>
+            <label className="block text-sm font-bold text-slate-700 mb-1">標籤 (選填，以逗號分隔)</label>
+            <input
+              type="text"
+              name="tags"
+              value={formData.tags}
+              onChange={handleChange}
+              className="w-full p-2.5 rounded-lg border border-slate-300 focus:ring-2 focus:ring-purple-200 outline-none"
+              placeholder="例如: 硬件, 記憶體, 筆記"
+            />
+          </div>
+
           {/* 工具栏 */}
           {mode === 'edit' && (
             <div className="flex flex-wrap gap-2 py-2 border-t border-b border-slate-100 bg-slate-50 px-2 rounded-md">
               {/* 导入 MD 文件 */}
-              <input 
-                type="file" 
-                accept=".md" 
-                ref={mdInputRef} 
-                className="hidden" 
-                onChange={handleMdFileUpload} 
+              <input
+                type="file"
+                accept=".md"
+                ref={mdInputRef}
+                className="hidden"
+                onChange={handleMdFileUpload}
               />
-              <button 
+              <button
                 onClick={() => mdInputRef.current.click()}
                 className="flex items-center space-x-1 text-xs bg-white border border-slate-300 px-3 py-1.5 rounded hover:bg-slate-100"
               >
@@ -178,20 +192,20 @@ const KnowledgeUpload = ({ user }) => {
               </button>
 
               {/* 上传图片 */}
-              <input 
-                type="file" 
-                accept="image/*" 
-                ref={fileInputRef} 
-                className="hidden" 
-                onChange={handleImageUpload} 
+              <input
+                type="file"
+                accept="image/*"
+                ref={fileInputRef}
+                className="hidden"
+                onChange={handleImageUpload}
               />
-              <button 
+              <button
                 onClick={() => fileInputRef.current.click()}
                 className="flex items-center space-x-1 text-xs bg-white border border-slate-300 px-3 py-1.5 rounded hover:bg-slate-100"
               >
                 <ImageIcon size={14} /> <span>插入圖片</span>
               </button>
-              
+
               <span className="text-xs text-slate-400 flex items-center ml-auto">支持 Markdown 語法</span>
             </div>
           )}
@@ -208,11 +222,14 @@ const KnowledgeUpload = ({ user }) => {
               />
             ) : (
               <div className="prose prose-slate max-w-none p-4 border border-slate-200 rounded-lg bg-slate-50 h-[400px] overflow-y-auto">
-                {formData.content ? (
-                  <ReactMarkdown>{formData.content}</ReactMarkdown>
-                ) : (
-                  <p className="text-slate-400 italic">暫無內容預覽</p>
-                )}
+                {/* 修正：移除 activeTab 判断，直接显示内容，因为外层已经判断了 mode !== 'edit' */}
+                <div className="bg-white p-6 rounded-xl border border-slate-200 min-h-[300px]">
+                  <div className="prose prose-slate max-w-none">
+                    <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                      {formData.content || '*預覽內容將顯示於此...*'}
+                    </ReactMarkdown>
+                  </div>
+                </div>
               </div>
             )}
           </div>
