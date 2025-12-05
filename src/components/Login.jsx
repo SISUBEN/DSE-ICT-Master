@@ -35,6 +35,13 @@ const Login = ({ onLogin }) => {
         throw new Error(data.message || '操作失敗');
       }
 
+      if (isRegister) {
+        alert('註冊成功！請使用剛創建的帳戶登入。');
+        setIsRegister(false);
+        setLoading(false);
+        return;
+      }
+
       // --- 关键修复 ---
       // 后端直接返回用户对象，而不是嵌套在 user 属性中
       // 我们做一个兼容性检查：如果 data.user 存在则用它，否则直接用 data
@@ -47,7 +54,7 @@ const Login = ({ onLogin }) => {
       } else {
         throw new Error('登入響應格式錯誤');
       }
-      
+
     } catch (err) {
       console.error('Login error:', err);
       setError(err.message || '無法連接到服務器');
@@ -135,7 +142,7 @@ const Login = ({ onLogin }) => {
               <span className="animate-pulse">處理中...</span>
             ) : (
               <>
-                {isRegister ? '註冊' : '登入'} 
+                {isRegister ? '註冊' : '登入'}
                 <LogIn size={18} className="ml-2" />
               </>
             )}

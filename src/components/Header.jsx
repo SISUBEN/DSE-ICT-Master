@@ -4,7 +4,7 @@ import {
   Menu, X, LogOut, User as UserIcon, 
   Upload, BookOpen, Library, ChevronDown, 
   LayoutDashboard, GraduationCap, BarChart3, PlusCircle,
-  FileQuestion, Database // <--- 引入图标
+  FileQuestion, Database, Search // <--- 引入图标
 } from 'lucide-react';
 
 const Header = ({ user, onLogout }) => {
@@ -83,6 +83,7 @@ const Header = ({ user, onLogout }) => {
         <nav className="hidden md:flex items-center space-x-2">
           <NavLink to="/" icon={LayoutDashboard}>主頁</NavLink>
           <NavLink to="/syllabus" icon={GraduationCap}>課程與練習</NavLink>
+          {user && <NavLink to="/knowledge/search" icon={Search}>搜索筆記</NavLink>}
           <NavLink to="/stats" icon={BarChart3}>我的進度</NavLink>
 
           {/* 创作中心下拉菜单 */}
@@ -110,6 +111,9 @@ const Header = ({ user, onLogout }) => {
                   </Link>
                   <div className="my-1 border-t border-slate-100"></div>
                   <div className="px-4 py-2 text-xs font-semibold text-slate-400 uppercase tracking-wider">管理</div>
+                  <Link to="/knowledge/search" className="flex items-center px-4 py-2.5 text-sm text-slate-700 hover:bg-green-50 hover:text-green-600 transition-colors">
+                    <Search size={16} className="mr-3 text-slate-400" /> 搜索筆記
+                  </Link>
                   <Link to="/knowledge/manage" className="flex items-center px-4 py-2.5 text-sm text-slate-700 hover:bg-slate-50 hover:text-slate-900 transition-colors">
                     <Library size={16} className="mr-3 text-slate-400" /> 我的筆記庫
                   </Link>
@@ -198,6 +202,11 @@ const Header = ({ user, onLogout }) => {
 
             <Link to="/" className="block px-4 py-3 text-slate-300 hover:bg-slate-800 hover:text-white rounded-lg transition">主頁</Link>
             <Link to="/syllabus" className="block px-4 py-3 text-slate-300 hover:bg-slate-800 hover:text-white rounded-lg transition">課程與練習</Link>
+            {user && (
+              <Link to="/knowledge/search" className="flex items-center px-4 py-3 text-slate-300 hover:bg-slate-800 hover:text-white rounded-lg transition">
+                <Search size={18} className="mr-3" /> 搜索筆記
+              </Link>
+            )}
             <Link to="/stats" className="block px-4 py-3 text-slate-300 hover:bg-slate-800 hover:text-white rounded-lg transition">我的進度</Link>
             
             {user && (
@@ -208,6 +217,9 @@ const Header = ({ user, onLogout }) => {
                 </Link>
                 <Link to="/knowledge/new" className="flex items-center px-4 py-3 text-slate-300 hover:bg-slate-800 hover:text-purple-400 rounded-lg transition">
                   <BookOpen size={18} className="mr-3" /> 添加筆記
+                </Link>
+                <Link to="/knowledge/search" className="flex items-center px-4 py-3 text-slate-300 hover:bg-slate-800 hover:text-green-400 rounded-lg transition">
+                  <Search size={18} className="mr-3" /> 搜索筆記
                 </Link>
                 <Link to="/knowledge/manage" className="flex items-center px-4 py-3 text-slate-300 hover:bg-slate-800 hover:text-purple-400 rounded-lg transition">
                   <Library size={18} className="mr-3" /> 我的筆記庫
