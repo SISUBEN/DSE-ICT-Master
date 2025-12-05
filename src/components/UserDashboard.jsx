@@ -1,12 +1,15 @@
 import React, { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import { 
   User, Settings, BarChart3, Target, Calendar, 
-  Bell, Shield, Save, LogOut 
+  Bell, Shield, Save, LogOut, BookOpen, Edit3, Trash2, Plus
 } from 'lucide-react';
+import { getModuleById } from '../data/syllabus';
 
 const UserDashboard = ({ user, onLogout }) => {
   const [activeTab, setActiveTab] = useState('overview');
   const [stats, setStats] = useState(null);
+  const [myKnowledge, setMyKnowledge] = useState([]);
   const [settings, setSettings] = useState({
     targetGrade: '5**',
     examYear: new Date().getFullYear(),
@@ -25,10 +28,11 @@ const UserDashboard = ({ user, onLogout }) => {
   const fetchData = async () => {
     try {
       setLoading(true);
-      // 并行获取统计数据和设置
-      const [statsRes, settingsRes] = await Promise.all([
+      // 并行获取统计数据、设置和知识点
+      const [statsRes, settingsRes, knowledgeRes] = await Promise.all([
         fetch(`/api/stats/${user.id}`),
-        fetch(`/api/settings/${user.id}`)
+        fetch(`/api/settings/${user.id}`),
+        fetch(`/api/knowledge/user/${user.id}`)
       ]);
 
       if (statsRes.ok) {
@@ -39,6 +43,11 @@ const UserDashboard = ({ user, onLogout }) => {
       if (settingsRes.ok) {
         const settingsData = await settingsRes.json();
         setSettings(prev => ({ ...prev, ...settingsData }));
+      }
+
+      if (knowledgeRes.ok) {
+        const knowledgeData = await knowledgeRes.json();
+        setMyKnowledge(knowledgeData);
       }
     } catch (error) {
       console.error('Failed to load dashboard data', error);
@@ -101,6 +110,12 @@ const UserDashboard = ({ user, onLogout }) => {
               <BarChart3 size={18} className="mr-3" /> 學習概覽
             </button>
             <button 
+              onClick={() => setActiveTab('knowledge')}
+              className={`w-full flex items-center px-4 py-3 rounded-xl transition font-medium ${activeTab === 'knowledge' ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/20' : 'text-slate-600 hover:bg-slate-50'}`}
+            >
+              <BookOpen size={18} className="mr-3" /> 我的知識點
+            </button>
+            <button 
               onClick={() => setActiveTab('settings')}
               className={`w-full flex items-center px-4 py-3 rounded-xl transition font-medium ${activeTab === 'settings' ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/20' : 'text-slate-600 hover:bg-slate-50'}`}
             >
@@ -147,6 +162,106 @@ const UserDashboard = ({ user, onLogout }) => {
                 <p className="text-slate-600 leading-relaxed">
                   根據你的答題記錄，我們建議你加強 <strong>必修部分 (Compulsory)</strong> 的練習。
                   保持目前的進度，你很有機會達到目標等級 <strong>{settings.targetGrade}</strong>！
+                </p>
+              </div>
+            </div>
+          )}
+
+          {activeTab === 'knowledge' && (
+            <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+              <div className="flex justify-between items-center mb-4">
+                <h2 className="text-2xl font-bold text-slate-800">我的知識點</h2>
+                <Link 
+                  to="/knowledge/new"
+                  className="flex items-center px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition"
+                >
+                  <Plus size={18} className="mr-2" /> 新增知識點
+                </Link>
+              </div>
+
+              {myKnowledge.length === 0 ? (
+                <div className="bg-white p-12 rounded-2xl shadow-sm border border-slate-100 text-center">
+                  <BookOpen size={48} className="mx-auto text-slate-300 mb-4" />
+                  <p className="text-slate-500 text-lg mb-4">你還沒有創建任何知識點</p>
+                  <Link 
+                    to="/knowledge/new"
+                    className="inline-flex items-center text-purple-600 hover:underline font-medium"
+                  >
+                    立即開始創建第一篇筆記
+                  </Link>
+                </div>
+              ) : (
+                <div className="grid gap-4">
+                  {myKnowledge.map(note => {
+                    const moduleInfo = getModuleById(note.moduleId);
+                    return (
+                      <div key={note._id} className="bg-white p-6 rounded-xl shadow-sm border border-slate-100 hover:shadow-md transition">
+                        <div className="flex justify-between items-start">
+                          <div className="flex-1">
+                            <div className="flex items-center space-x-2 mb-2">
+                              <span className="bg-purple-50 text-purple-700 text-xs px-2 py-1 rounded font-medium border border-purple-100">
+                                {moduleInfo ? `${moduleInfo.code} ${moduleInfo.title}` : note.moduleId}
+                              </span>
+                              {note.tags && note.tags.map((tag, idx) => (
+                                <span key={idx} className="bg-slate-100 text-slate-600 text-xs px-2 py-1 rounded font-medium">
+                                  {tag}
+                                </span>
+                              ))}
+                              <span className="text-slate-400 text-xs flex items-center">
+                                <Calendar size={12} className="mr-1" />
+                                {new Date(note.createdAt).toLocaleDateString()}
+                              </span>
+                            </div>
+                            <Link to={`/knowledge/${note._id}`} className="block hover:text-purple-600 transition">
+                              <h3 className="text-lg font-bold text-slate-800 mb-1">{note.title}</h3>
+                            </Link>
+                            <p className="text-slate-500 text-sm line-clamp-2">{note.content.substring(0, 150).replace(/[#*`]/g, '')}...</p>
+                          </div>
+                          
+                          <div className="flex items-center space-x-2 ml-4">
+                            <Link 
+                              to={`/knowledge/${note._id}/edit`}
+                              className="p-2 text-purple-600 hover:bg-purple-50 rounded-lg transition"
+                              title="編輯"
+                            >
+                              <Edit3 size={18} />
+                            </Link>
+                            <button 
+                              onClick={async () => {
+                                if (!window.confirm('確定要刪除這條筆記嗎？')) return;
+                                try {
+                                  const res = await fetch(`/api/knowledge/${note._id}?userId=${user.id}`, {
+                                    method: 'DELETE',
+                                  });
+                                  if (res.ok) {
+                                    setMyKnowledge(prev => prev.filter(n => n._id !== note._id));
+                                  } else {
+                                    alert('刪除失敗');
+                                  }
+                                } catch (error) {
+                                  console.error('Delete error:', error);
+                                  alert('刪除出錯');
+                                }
+                              }}
+                              className="p-2 text-red-500 hover:bg-red-50 rounded-lg transition"
+                              title="刪除"
+                            >
+                              <Trash2 size={18} />
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+
+              <div className="bg-blue-50 p-6 rounded-xl border border-blue-100">
+                <h3 className="font-bold text-blue-800 mb-2 flex items-center">
+                  <BookOpen size={18} className="mr-2" /> 統計概覽
+                </h3>
+                <p className="text-blue-700 text-sm">
+                  你已經創建了 <strong>{myKnowledge.length}</strong> 條知識點筆記。繼續分享你的學習心得吧！
                 </p>
               </div>
             </div>

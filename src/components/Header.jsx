@@ -83,6 +83,7 @@ const Header = ({ user, onLogout }) => {
         <nav className="hidden md:flex items-center space-x-2">
           <NavLink to="/" icon={LayoutDashboard}>主頁</NavLink>
           <NavLink to="/syllabus" icon={GraduationCap}>課程與練習</NavLink>
+          <NavLink to="/knowledge-hub" icon={BookOpen}>知識庫</NavLink>
           {user && <NavLink to="/knowledge/search" icon={Search}>搜索筆記</NavLink>}
           <NavLink to="/stats" icon={BarChart3}>我的進度</NavLink>
 

@@ -38,6 +38,8 @@ import UserDashboard from './components/UserDashboard';
 import SqlDojo from './components/SqlDojo';
 import SearchKnowledge from './components/SearchKnowledge';
 import Stats from './components/Stats'; // <--- Added import
+import KnowledgeHub from './components/KnowledgeHub'; // <--- Added import for KnowledgeHub
+import KnowledgeEdit from './components/KnowledgeEdit'; // <--- Added import for KnowledgeEdit
 
 // --- Quiz Wrapper with Data Lookup ---
 const QuizWrapper = ({ user }) => {
@@ -151,12 +153,18 @@ const App = () => {
           } />
 
           <Route path="/knowledge/:id" element={
-            user ? <KnowledgeDetail /> : <Navigate to="/login" replace />
+            user ? <KnowledgeDetail user={user} /> : <Navigate to="/login" replace />
+          } />
+
+          <Route path="/knowledge/:id/edit" element={
+            user ? <KnowledgeEdit user={user} /> : <Navigate to="/login" replace />
           } />
 
           <Route path="/knowledge/search" element={
             user ? <SearchKnowledge user={user} /> : <Navigate to="/login" replace />
           } />
+
+          <Route path="/knowledge-hub" element={<KnowledgeHub user={user} />} />
 
           <Route path="/questions/manage" element={
             user ? <ManageQuestions user={user} /> : <Navigate to="/login" replace />
