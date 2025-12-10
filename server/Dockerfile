@@ -1,23 +1,20 @@
-# 使用 Node.js 官方镜像
 FROM node:18-alpine
 
-# 设置工作目录
 WORKDIR /app
 
-# 复制 package.json 和 package-lock.json (如果有)
+# Copy package.json from the build context (project root)
 COPY package*.json ./
 
-# 安装依赖
+# Install dependencies
 RUN npm install --production
 
-# 复制源代码
-COPY . .
+# Copy the server directory from the build context (project root) to /app/server
+COPY server ./server
 
-# 创建上传目录
-RUN mkdir -p uploads
+# Create uploads directory
+RUN mkdir -p server/uploads
 
-# 暴露端口
 EXPOSE 5000
 
-# 启动命令
-CMD ["node", "index.js"]
+# Start the server
+CMD ["node", "server/index.js"]

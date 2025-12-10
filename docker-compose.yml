@@ -1,3 +1,5 @@
+version: '3'
+
 services:
   # 前端服务
   frontend:
@@ -13,17 +15,18 @@ services:
   # 后端服务
   backend:
     build:
-      context: ./server
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: server/Dockerfile
     ports:
       - "5000:5000"
     env_file:
       - .env
     depends_on:
-      - mongo
+      - mongodb
     volumes:
       - ./server/uploads:/app/uploads # 持久化上传的文件
     restart: always
+
   mongodb:
     image: mongo:latest
     container_name: dse-ict-mongo
