@@ -1,8 +1,8 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { 
-  Menu, X, LogOut, User as UserIcon, 
-  Upload, BookOpen, Library, ChevronDown, 
+import {
+  Menu, X, LogOut, User as UserIcon,
+  Upload, BookOpen, Library, ChevronDown,
   LayoutDashboard, GraduationCap, BarChart3, PlusCircle,
   FileQuestion, Database, Search // <--- 引入图标
 } from 'lucide-react';
@@ -11,10 +11,10 @@ const Header = ({ user, onLogout }) => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isCreateMenuOpen, setIsCreateMenuOpen] = useState(false);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
-  
+
   const navigate = useNavigate();
   const location = useLocation();
-  
+
   // 点击外部关闭下拉菜单
   const createMenuRef = useRef(null);
   const userMenuRef = useRef(null);
@@ -48,11 +48,11 @@ const Header = ({ user, onLogout }) => {
   const NavLink = ({ to, icon: Icon, children }) => {
     const isActive = location.pathname === to;
     return (
-      <Link 
-        to={to} 
+      <Link
+        to={to}
         className={`flex items-center space-x-1.5 px-3 py-2 rounded-lg transition-all duration-200 font-medium text-sm
-          ${isActive 
-            ? 'bg-blue-600/10 text-blue-400' 
+          ${isActive
+            ? 'bg-blue-600/10 text-blue-400'
             : 'text-slate-300 hover:text-white hover:bg-slate-800'
           }`}
       >
@@ -65,7 +65,7 @@ const Header = ({ user, onLogout }) => {
   return (
     <header className="bg-white/80 backdrop-blur-md border-b border-slate-200/60 sticky top-0 z-50 shadow-sm">
       <div className="container mx-auto px-4 h-16 flex justify-between items-center">
-        
+
         {/* --- Logo --- */}
         <Link to="/" className="flex items-center space-x-3 group">
           <div className="w-9 h-9 bg-gradient-to-br from-blue-600 to-purple-600 rounded-xl flex items-center justify-center text-white font-bold text-xl shadow-lg shadow-blue-500/20 group-hover:shadow-blue-500/40 transition-all transform group-hover:rotate-3">
@@ -84,13 +84,13 @@ const Header = ({ user, onLogout }) => {
           <NavLink to="/" icon={LayoutDashboard}>主頁</NavLink>
           <NavLink to="/syllabus" icon={GraduationCap}>課程與練習</NavLink>
           <NavLink to="/knowledge-hub" icon={BookOpen}>知識庫</NavLink>
-          {user && <NavLink to="/knowledge/search" icon={Search}>搜索筆記</NavLink>}
+          {/* {user && <NavLink to="/knowledge/search" icon={Search}>搜索筆記</NavLink>} */}
           <NavLink to="/stats" icon={BarChart3}>我的進度</NavLink>
 
           {/* 创作中心下拉菜单 */}
           {user && (
             <div className="relative ml-2" ref={createMenuRef}>
-              <button 
+              <button
                 onClick={() => setIsCreateMenuOpen(!isCreateMenuOpen)}
                 className={`flex items-center space-x-1.5 px-3 py-2 rounded-lg transition-all duration-200 font-medium text-sm
                   ${isCreateMenuOpen ? 'bg-slate-800 text-white' : 'text-slate-300 hover:text-white hover:bg-slate-800'}
@@ -132,7 +132,7 @@ const Header = ({ user, onLogout }) => {
         <div className="hidden md:flex items-center pl-6 border-l border-slate-800 ml-4">
           {user ? (
             <div className="relative" ref={userMenuRef}>
-              <button 
+              <button
                 onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
                 className="flex items-center space-x-3 group focus:outline-none"
               >
@@ -151,13 +151,13 @@ const Header = ({ user, onLogout }) => {
                     <p className="text-sm font-bold text-slate-800">{user.username}</p>
                     <p className="text-xs text-slate-500">已登入</p>
                   </div>
-                  
+
                   {/* 新增：个人中心链接 */}
                   <Link to="/profile" className="flex items-center px-4 py-2.5 text-sm text-slate-700 hover:bg-slate-50 transition-colors">
                     <UserIcon size={16} className="mr-3 text-slate-400" /> 個人中心
                   </Link>
-                  
-                  <button 
+
+                  <button
                     onClick={handleLogout}
                     className="w-full flex items-center px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 transition-colors"
                   >
@@ -167,8 +167,8 @@ const Header = ({ user, onLogout }) => {
               )}
             </div>
           ) : (
-            <Link 
-              to="/login" 
+            <Link
+              to="/login"
               className="bg-blue-600 hover:bg-blue-500 text-white px-5 py-2 rounded-lg text-sm font-bold transition-all shadow-lg shadow-blue-600/20 hover:shadow-blue-600/40"
             >
               登入
@@ -177,7 +177,7 @@ const Header = ({ user, onLogout }) => {
         </div>
 
         {/* --- Mobile Menu Button --- */}
-        <button 
+        <button
           className="md:hidden text-slate-300 hover:text-white p-2"
           onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
         >
@@ -209,7 +209,7 @@ const Header = ({ user, onLogout }) => {
               </Link>
             )}
             <Link to="/stats" className="block px-4 py-3 text-slate-300 hover:bg-slate-800 hover:text-white rounded-lg transition">我的進度</Link>
-            
+
             {user && (
               <>
                 <div className="pt-4 pb-2 px-4 text-xs font-bold text-slate-500 uppercase tracking-wider">創作與管理</div>
@@ -225,7 +225,7 @@ const Header = ({ user, onLogout }) => {
                 <Link to="/knowledge/manage" className="flex items-center px-4 py-3 text-slate-300 hover:bg-slate-800 hover:text-purple-400 rounded-lg transition">
                   <Library size={18} className="mr-3" /> 我的筆記庫
                 </Link>
-                
+
                 <div className="pt-4 border-t border-slate-800 mt-4">
                   <button onClick={handleLogout} className="w-full flex items-center px-4 py-3 text-red-400 hover:bg-red-500/10 rounded-lg transition">
                     <LogOut size={18} className="mr-3" /> 登出
