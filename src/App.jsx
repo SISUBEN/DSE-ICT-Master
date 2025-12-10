@@ -44,6 +44,7 @@ const QuizWrapper = ({ user }) => {
   const { moduleId } = useParams();
   const navigate = useNavigate();
 
+
   // Find the actual module data
   const module = getModuleById(moduleId);
 
@@ -117,6 +118,7 @@ const App = () => {
     <div className="min-h-screen bg-slate-50 font-sans text-slate-900">
       <Header user={user} onLogout={handleLogout} />
 
+
       <main className="min-h-[calc(100vh-200px)]">
         <Routes>
           <Route
@@ -134,6 +136,7 @@ const App = () => {
             user ? <QuizWrapper user={user} /> : <Navigate to="/login" replace />
           } />
 
+
           <Route path="/stats" element={
             user ? <Stats user={user} /> : <Navigate to="/login" replace />
           } />
@@ -145,23 +148,23 @@ const App = () => {
           <Route path="/knowledge/new" element={
             user ? <KnowledgeUpload user={user} /> : <Navigate to="/login" replace />
           } />
-
+          
+          {/* 管理笔记 */}
           <Route path="/knowledge/manage" element={
             user ? <MyNotes user={user} /> : <Navigate to="/login" replace />
           } />
-
+          
+          {/* 查看笔记详情 */}
           <Route path="/knowledge/:id" element={
             user ? <KnowledgeDetail /> : <Navigate to="/login" replace />
           } />
-
-          <Route path="/knowledge/search" element={
-            user ? <SearchKnowledge user={user} /> : <Navigate to="/login" replace />
-          } />
-
+          
+          {/* 新增：管理题目路由 */}
           <Route path="/questions/manage" element={
             user ? <ManageQuestions user={user} /> : <Navigate to="/login" replace />
           } />
-
+          
+          {/* 新增：用户个人中心路由 */}
           <Route path="/profile" element={
             user ? <UserDashboard user={user} onLogout={handleLogout} /> : <Navigate to="/login" replace />
           } />
