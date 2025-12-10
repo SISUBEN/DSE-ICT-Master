@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { 
+import {
   BookOpen, ArrowRight, Zap, Trophy, Sparkles, Target,
   Database, Globe, Code, Cpu, GraduationCap, BarChart3 // <--- 新增导入这些图标
 } from 'lucide-react';
@@ -9,7 +9,7 @@ const Dashboard = ({ user, onSelectModule }) => {
   // 1. 添加 syllabus 状态
   const [syllabus, setSyllabus] = useState({ compulsory: [], electives: [] });
   const [loading, setLoading] = useState(true);
-  
+
   const [stats, setStats] = useState({
     completedModules: 0,
     totalQuestions: 0,
@@ -66,7 +66,7 @@ const Dashboard = ({ user, onSelectModule }) => {
         <p className="text-slate-500">準備好今天的學習了嗎？選擇一個模塊開始吧。</p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         {/* 1. 課程與練習卡片 */}
         <Link to="/syllabus" className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 hover:shadow-md transition group relative overflow-hidden">
           <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition">
@@ -82,7 +82,22 @@ const Dashboard = ({ user, onSelectModule }) => {
           </div>
         </Link>
 
-        {/* 2. SQL Dojo 卡片 (新增) */}
+        {/* 2. 知識庫卡片 (新增 - 突出顯示) */}
+        <Link to="/knowledge-hub" className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 hover:shadow-md transition group relative overflow-hidden">
+          <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition">
+            <BookOpen size={100} />
+          </div>
+          <div className="w-12 h-12 bg-amber-100 text-amber-600 rounded-xl flex items-center justify-center mb-4 group-hover:bg-amber-600 group-hover:text-white transition relative z-10">
+            <BookOpen size={24} />
+          </div>
+          <h3 className="text-xl font-bold text-slate-800 mb-2 relative z-10">知識庫</h3>
+          <p className="text-slate-500 text-sm mb-4 relative z-10">瀏覽所有用戶分享的學習筆記和知識點。</p>
+          <div className="flex items-center text-amber-600 text-sm font-bold group-hover:translate-x-1 transition relative z-10">
+            探索知識 <ArrowRight size={16} className="ml-1" />
+          </div>
+        </Link>
+
+        {/* 3. SQL Dojo 卡片 */}
         <Link to="/sql-dojo" className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 hover:shadow-md transition group relative overflow-hidden">
           <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition">
             <Database size={100} />
@@ -97,7 +112,7 @@ const Dashboard = ({ user, onSelectModule }) => {
           </div>
         </Link>
 
-        {/* 3. 學習進度卡片 */}
+        {/* 4. 學習進度卡片 */}
         <Link to="/stats" className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 hover:shadow-md transition group relative overflow-hidden">
           <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition">
             <BarChart3 size={100} />
