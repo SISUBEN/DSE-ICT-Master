@@ -265,6 +265,12 @@ const MyNotes = ({ user }) => {
                 >
                   查看 <ArrowRight size={14} className="ml-1" />
                 </Link>
+                <Link 
+                  to={`/knowledge/${note._id}/edit`}
+                  className="px-4 py-2 text-sm text-purple-600 bg-purple-50 hover:bg-purple-100 rounded-lg transition flex items-center"
+                >
+                  編輯
+                </Link>
                 {(user?.role === 'admin' || user?.id === note.author) && (
                   <button 
                     onClick={() => handleDelete(note._id)}
