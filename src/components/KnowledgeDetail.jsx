@@ -19,7 +19,7 @@ const KnowledgeDetail = ({ user }) => {
         setNote(data);
       } catch (error) {
         console.error(error);
-        navigate('/knowledge/manage');
+        navigate('/knowledge-hub');
       } finally {
         setLoading(false);
       }
@@ -36,8 +36,8 @@ const KnowledgeDetail = ({ user }) => {
   return (
     <div className="container mx-auto px-4 py-8 max-w-4xl">
       <div className="flex justify-between items-center mb-6">
-        <Link to="/knowledge/manage" className="inline-flex items-center text-slate-500 hover:text-slate-800 transition">
-          <ArrowLeft size={18} className="mr-1" /> 返回我的筆記
+        <Link to="/knowledge-hub" className="inline-flex items-center text-slate-500 hover:text-slate-800 transition">
+          <ArrowLeft size={18} className="mr-1" /> 返回知識庫
         </Link>
         
         {canEdit && (

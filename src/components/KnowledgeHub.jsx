@@ -239,7 +239,7 @@ const KnowledgeHub = ({ user }) => {
           {filteredKnowledge.map(item => (
             <Link
               key={item._id}
-              to={user ? `/knowledge/${item._id}` : '/login'}
+              to={`/knowledge/${item._id}`}
               className="bg-white p-6 rounded-xl shadow-sm border border-slate-100 hover:shadow-lg hover:border-purple-200 transition block group"
             >
               <div className="flex items-start justify-between mb-3">

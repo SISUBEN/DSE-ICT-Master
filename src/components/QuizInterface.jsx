@@ -82,6 +82,23 @@ const QuizInterface = ({ module, user, onExit }) => { // <--- 添加 user
   
   const question = questions[currentQ]; // 获取当前题目
 
+  const logQuizAction = async (actionType, payload) => {
+    if (!user?.id) return;
+    try {
+      await fetch('/api/actions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userId: user.id,
+          actionType,
+          details: payload
+        })
+      });
+    } catch (error) {
+      console.error('Failed to save progress', error);
+    }
+  };
+
   const handleRestart = () => {
     setCurrentQ(0);
     setScore(0);
@@ -102,6 +119,22 @@ const QuizInterface = ({ module, user, onExit }) => { // <--- 添加 user
     }
   };
 
+  const handleExitEarly = async () => {
+    const attemptedQuestions = currentQ + (isAnswered ? 1 : 0);
+    const confirmed = window.confirm('確定要提前退出嗎？系統會自動結算並記錄本次結果。');
+    if (!confirmed) return;
+
+    await logQuizAction('QUIZ_END', {
+      moduleId: module.id,
+      score,
+      attemptedQuestions,
+      totalQuestions: questions.length,
+      completed: false
+    });
+
+    onExit();
+  };
+
   // 新增：处理下一题
   const handleNext = async () => {
     if (currentQ < questions.length - 1) {
@@ -111,25 +144,13 @@ const QuizInterface = ({ module, user, onExit }) => { // <--- 添加 user
     } else {
       setShowResult(true);
       
-      if (user && user.id) {
-        try {
-          await fetch('/api/actions', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              userId: user.id,
-              actionType: 'QUIZ_COMPLETE',
-              details: { 
-                moduleId: module.id, 
-                score: score, // 此时 score 已经包含了最后一题的结果
-                totalQuestions: questions.length 
-              }
-            })
-          });
-        } catch (error) {
-          console.error('Failed to save progress', error);
-        }
-      }
+      await logQuizAction('QUIZ_COMPLETE', {
+        moduleId: module.id,
+        score, // 此时 score 已经包含了最后一题的结果
+        attemptedQuestions: questions.length,
+        totalQuestions: questions.length,
+        completed: true
+      });
     }
   };
 
@@ -228,20 +249,29 @@ const QuizInterface = ({ module, user, onExit }) => { // <--- 添加 user
                  )}
                </div>
                
-               <button 
-                 onClick={handleNext} // <--- 确保这里绑定了 handleNext
-                 disabled={!isAnswered}
-                 className={`px-6 py-3 rounded-xl font-bold flex items-center transition-all duration-200
-                   ${isAnswered 
-                     ? 'bg-blue-600 text-white hover:bg-blue-700 shadow-lg shadow-blue-600/20 translate-y-0' 
-                     : 'bg-slate-200 text-slate-400 cursor-not-allowed'
-                   }
-                 `}
-               >
-                 {currentQ === questions.length - 1 ? '查看結果' : '下一題'} 
-                 <ArrowRight size={18} className="ml-2" />
-               </button>
-             </div>
+              <div className="flex items-center gap-3">
+                <button
+                  onClick={handleExitEarly}
+                  className="px-4 py-2 rounded-xl border border-slate-200 text-slate-600 font-bold hover:bg-slate-100 transition"
+                >
+                  提前退出
+                </button>
+
+                <button 
+                  onClick={handleNext} // <--- 确保这里绑定了 handleNext
+                  disabled={!isAnswered}
+                  className={`px-6 py-3 rounded-xl font-bold flex items-center transition-all duration-200
+                    ${isAnswered 
+                      ? 'bg-blue-600 text-white hover:bg-blue-700 shadow-lg shadow-blue-600/20 translate-y-0' 
+                      : 'bg-slate-200 text-slate-400 cursor-not-allowed'
+                    }
+                  `}
+                >
+                  {currentQ === questions.length - 1 ? '查看結果' : '下一題'} 
+                  <ArrowRight size={18} className="ml-2" />
+                </button>
+              </div>
+            </div>
            {/* ...existing footer code... */}
         </div>
       )}

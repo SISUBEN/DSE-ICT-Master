@@ -106,7 +106,7 @@ const Dashboard = ({ user, onSelectModule }) => {
             <Database size={24} />
           </div>
           <h3 className="text-xl font-bold text-slate-800 mb-2 relative z-10">SQL 闖關練習</h3>
-          <p className="text-slate-500 text-sm mb-4 relative z-10">互動式 SQL 挑戰，從基礎查詢到複雜 JOIN 操作。</p>
+          <p className="text-slate-500 text-sm mb-4 relative z-10">基礎到進階任務闖關：JOIN / UNION / 子查詢 / GROUP BY。</p>
           <div className="flex items-center text-blue-600 text-sm font-bold group-hover:translate-x-1 transition relative z-10">
             進入挑戰 <ArrowRight size={16} className="ml-1" />
           </div>
@@ -127,18 +127,33 @@ const Dashboard = ({ user, onSelectModule }) => {
           </div>
         </Link>
 
-        {/* 4. 知識庫卡片 (新增) */}
-        <Link to="/knowledge/library" className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 hover:shadow-md transition group relative overflow-hidden">
+        {/* 5. Python Dojo 卡片 */}
+        <Link to="/python-dojo" className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 hover:shadow-md transition group relative overflow-hidden">
           <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition">
-            <BookOpen size={100} />
+            <Code size={100} />
           </div>
-          <div className="w-12 h-12 bg-amber-100 text-amber-600 rounded-xl flex items-center justify-center mb-4 group-hover:bg-amber-600 group-hover:text-white transition relative z-10">
-            <BookOpen size={24} />
+          <div className="w-12 h-12 bg-indigo-100 text-indigo-600 rounded-xl flex items-center justify-center mb-4 group-hover:bg-indigo-600 group-hover:text-white transition relative z-10">
+            <Code size={24} />
           </div>
-          <h3 className="text-xl font-bold text-slate-800 mb-2 relative z-10">知識庫</h3>
-          <p className="text-slate-500 text-sm mb-4 relative z-10">瀏覽所有同學分享的學習筆記，互相學習。</p>
-          <div className="flex items-center text-amber-600 text-sm font-bold group-hover:translate-x-1 transition relative z-10">
-            進入知識庫 <ArrowRight size={16} className="ml-1" />
+          <h3 className="text-xl font-bold text-slate-800 mb-2 relative z-10">Python 闖關練習</h3>
+          <p className="text-slate-500 text-sm mb-4 relative z-10">互動式 Python 練習，跟隨 HKDSE 重點逐步闖關。</p>
+          <div className="flex items-center text-indigo-600 text-sm font-bold group-hover:translate-x-1 transition relative z-10">
+            進入挑戰 <ArrowRight size={16} className="ml-1" />
+          </div>
+        </Link>
+
+        {/* 6. Excel Dojo 卡片 */}
+        <Link to="/excel-dojo" className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 hover:shadow-md transition group relative overflow-hidden">
+          <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition">
+            <Cpu size={100} />
+          </div>
+          <div className="w-12 h-12 bg-teal-100 text-teal-600 rounded-xl flex items-center justify-center mb-4 group-hover:bg-teal-600 group-hover:text-white transition relative z-10">
+            <Cpu size={24} />
+          </div>
+          <h3 className="text-xl font-bold text-slate-800 mb-2 relative z-10">Excel 闖關練習</h3>
+          <p className="text-slate-500 text-sm mb-4 relative z-10">練習常用公式與引用技巧，從入門到熟練。</p>
+          <div className="flex items-center text-teal-600 text-sm font-bold group-hover:translate-x-1 transition relative z-10">
+            進入挑戰 <ArrowRight size={16} className="ml-1" />
           </div>
         </Link>
       </div>

@@ -4,7 +4,7 @@ import {
   Menu, X, LogOut, User as UserIcon,
   Upload, BookOpen, Library, ChevronDown,
   LayoutDashboard, GraduationCap, BarChart3, PlusCircle,
-  FileQuestion, Database, Search // <--- 引入图标
+  FileQuestion, Search // <--- 引入图标
 } from 'lucide-react';
 
 const Header = ({ user, onLogout }) => {
@@ -203,6 +203,7 @@ const Header = ({ user, onLogout }) => {
 
             <Link to="/" className="block px-4 py-3 text-slate-300 hover:bg-slate-800 hover:text-white rounded-lg transition">主頁</Link>
             <Link to="/syllabus" className="block px-4 py-3 text-slate-300 hover:bg-slate-800 hover:text-white rounded-lg transition">課程與練習</Link>
+            <Link to="/knowledge-hub" className="block px-4 py-3 text-slate-300 hover:bg-slate-800 hover:text-white rounded-lg transition">知識庫</Link>
             {user && (
               <Link to="/knowledge/search" className="flex items-center px-4 py-3 text-slate-300 hover:bg-slate-800 hover:text-white rounded-lg transition">
                 <Search size={18} className="mr-3" /> 搜索筆記

@@ -32,6 +32,8 @@ const Topic = {
     INTERNET: 'INTERNET',
     PROGRAMMING: 'PROGRAMMING',
     SOCIAL_IMPACTS: 'SOCIAL_IMPACTS',
+    DB_ELECTIVE: 'DB_ELECTIVE',
+    ALGO_ELECTIVE: 'ALGO_ELECTIVE',
     // Add others if needed, or use a Proxy to catch all
 };
 
@@ -39,107 +41,158 @@ const QuestionType = {
     MCQ: 'MCQ'
 };
 
-// Module Mapping
-const MODULE_MAPPING = {
-    'modA': 'core-a',
-    'modB': 'core-b',
-    'modC': 'core-c',
-    'modD': 'core-d',
-    'modE': 'core-e'
+const DEFAULT_SOURCES = [
+    {
+        file: path.join(process.cwd(), 'data', 'elective_db_questions.ts'),
+        exportName: 'ELECTIVE_DB_MC_QUESTIONS',
+        moduleId: 'eA'
+    },
+    {
+        file: path.join(process.cwd(), 'data', 'elective_questions.ts'),
+        exportName: 'ELECTIVE_ALGO_MC_QUESTIONS',
+        moduleId: 'eD'
+    }
+];
+
+const parseArgs = () => {
+    const args = process.argv.slice(2);
+    const flags = new Set(args.filter(a => a.startsWith('--')));
+    const getValue = (name) => {
+        const idx = args.indexOf(name);
+        if (idx === -1) return undefined;
+        return args[idx + 1];
+    };
+
+    return {
+        mongoUri: getValue('--mongo') || process.env.MONGO_URI,
+        append: flags.has('--append'),
+        dryRun: flags.has('--dry-run'),
+        parseOnly: flags.has('--parse-only')
+    };
+};
+
+const extractExportedArrayLiteral = (fileContent, exportName) => {
+    // Matches: export const NAME: MCQ[] = [ ... ];
+    // Supports optional type annotation between name and '='.
+    const re = new RegExp(
+        `export\\s+const\\s+${exportName}\\s*(?::[^=]+)?=\\s*(\\[[\\s\\S]*?\\]);`,
+        'm'
+    );
+    const match = fileContent.match(re);
+    return match ? match[1] : null;
+};
+
+const evalWithMocks = (arrayLiteral, fileLabel) => {
+    try {
+        // eslint-disable-next-line no-eval
+        return eval(arrayLiteral);
+    } catch (e) {
+        console.error(`Error evaluating ${fileLabel}:`, e);
+        // Retry with Proxy mocks that return property name as value
+        const Topic = new Proxy({}, { get: (target, prop) => prop });
+        const QuestionType = new Proxy({}, { get: (target, prop) => prop });
+        try {
+            // eslint-disable-next-line no-eval
+            return eval(arrayLiteral);
+        } catch (e2) {
+            console.error(`Retry failed for ${fileLabel}:`, e2);
+            return null;
+        }
+    }
 };
 
 async function importData() {
+    const options = parseArgs();
     try {
-        console.log('Connecting to MongoDB...');
-        await mongoose.connect(process.env.MONGO_URI);
-        console.log('Connected.');
+        let adminUser = null;
 
-        // Find Admin User
-        const adminUser = await User.findOne({ username: 'admin' });
-        if (!adminUser) {
-            console.error('Admin user not found! Please run the server to seed the admin user first.');
-            process.exit(1);
+        if (!options.parseOnly) {
+            if (!options.mongoUri) {
+                throw new Error('Missing MongoDB URI. Set MONGO_URI in .env or pass --mongo "<uri>".');
+            }
+
+            console.log('Connecting to MongoDB...');
+            await mongoose.connect(options.mongoUri);
+            console.log('Connected.');
+
+            // Find Admin User
+            adminUser = await User.findOne({ username: 'admin' });
+            if (!adminUser) {
+                console.warn('Admin user not found; importing questions without createdBy.');
+            } else {
+                console.log(`Found admin user: ${adminUser._id}`);
+            }
         }
-        console.log(`Found admin user: ${adminUser._id}`);
 
-        const dataDir = path.join(process.cwd(), 'data', 'core_modules');
-        const files = fs.readdirSync(dataDir).filter(f => f.endsWith('.ts'));
+        let totalInserted = 0;
 
-        for (const file of files) {
-            console.log(`Processing ${file}...`);
-            const content = fs.readFileSync(path.join(dataDir, file), 'utf-8');
-
-            // Extract variable name and array content
-            // Regex to match: export const modA: MCQ[] = [ ... ];
-            const match = content.match(/export const (mod[A-E]): MCQ\[\] = (\[[\s\S]*?\]);/);
-
-            if (!match) {
-                console.warn(`Could not parse content in ${file}`);
+        for (const source of DEFAULT_SOURCES) {
+            if (!fs.existsSync(source.file)) {
+                console.warn(`Missing source file: ${source.file} (skipped)`);
                 continue;
             }
 
-            const varName = match[1];
-            const arrayString = match[2];
-            const moduleId = MODULE_MAPPING[varName];
+            console.log(`Processing ${path.basename(source.file)} (${source.exportName})...`);
+            const content = fs.readFileSync(source.file, 'utf-8');
+            const arrayLiteral = extractExportedArrayLiteral(content, source.exportName);
 
-            if (!moduleId) {
-                console.warn(`No module mapping found for ${varName}`);
+            if (!arrayLiteral) {
+                console.warn(`Could not find export ${source.exportName} in ${source.file} (skipped)`);
                 continue;
             }
 
-            // Eval the array string to get the data
-            // We use a simple eval here because we trust the source files (they are local)
-            // and we have mocked the necessary enums.
-            let questionsData;
-            try {
-                questionsData = eval(arrayString);
-            } catch (e) {
-                console.error(`Error evaluating data in ${file}:`, e);
-                // Try to handle potential missing enums by using a Proxy for Topic if it failed
-                const TopicProxy = new Proxy({}, { get: (target, prop) => prop });
-                try {
-                    // Re-eval with Topic as Proxy in scope? 
-                    // eval scope is local. Let's just redefine Topic locally if needed or rely on the global const.
-                    // If the previous eval failed, it might be due to unmocked values.
-                    // Let's try to be more robust.
-                    console.log('Retrying with robust mocks...');
-                    const Topic = new Proxy({}, { get: (target, prop) => prop });
-                    questionsData = eval(arrayString);
-                } catch (e2) {
-                    console.error('Retry failed:', e2);
-                    continue;
-                }
+            const questionsData = evalWithMocks(arrayLiteral, `${source.file}:${source.exportName}`);
+            if (!Array.isArray(questionsData)) {
+                console.warn(`Parsed data is not an array for ${source.exportName} (skipped)`);
+                continue;
             }
 
-            console.log(`Found ${questionsData.length} questions for ${moduleId}`);
-
-            // Transform and Insert
             const questionsToInsert = questionsData.map(q => ({
-                moduleId: moduleId,
+                moduleId: source.moduleId,
                 question: q.question,
                 options: q.options,
                 correct: q.answerIndex,
                 explanation: q.explanation,
-                difficulty: 'medium', // Default
-                createdBy: adminUser._id
-            }));
+                difficulty: 'medium',
+                createdBy: adminUser?._id
+            })).filter(q =>
+                typeof q.question === 'string' &&
+                Array.isArray(q.options) &&
+                typeof q.correct === 'number'
+            );
 
-            // Optional: Clear existing questions for this module to avoid duplicates?
-            // Or just append? The user said "import", usually implies adding.
-            // But to avoid duplicates on re-run, let's check or delete.
-            // Let's delete existing ones for this module to be clean.
-            await Question.deleteMany({ moduleId: moduleId });
-            console.log(`Cleared existing questions for ${moduleId}`);
+            console.log(`Found ${questionsData.length} entries, valid for insert: ${questionsToInsert.length}`);
 
-            await Question.insertMany(questionsToInsert);
-            console.log(`Inserted ${questionsToInsert.length} questions into ${moduleId}`);
+            if (options.parseOnly) {
+                continue;
+            }
+
+            if (!options.append) {
+                await Question.deleteMany({ moduleId: source.moduleId });
+                console.log(`Cleared existing questions for ${source.moduleId}`);
+            }
+
+            if (options.dryRun) {
+                console.log(`[dry-run] Would insert ${questionsToInsert.length} questions into ${source.moduleId}`);
+                continue;
+            }
+
+            const res = await Question.insertMany(questionsToInsert, { ordered: false });
+            totalInserted += res.length;
+            console.log(`Inserted ${res.length} questions into ${source.moduleId}`);
         }
 
-        console.log('Import completed successfully.');
+        if (options.parseOnly) {
+            console.log('Parse-only completed successfully.');
+        } else {
+            console.log(`Import completed successfully. Total inserted: ${totalInserted}`);
+        }
     } catch (error) {
         console.error('Import failed:', error);
     } finally {
-        await mongoose.disconnect();
+        if (!options.parseOnly) {
+            await mongoose.disconnect();
+        }
         process.exit(0);
     }
 }

@@ -18,6 +18,7 @@ const SqlDojo = () => {
       hint: "使用 SELECT column1, column2 FROM table_name; 如果遇到保留字錯誤，請嘗試用 [class]。",
       answerSQL: "SELECT name, [class] FROM STUDENT",
       requiredKeywords: ["SELECT"],
+      level: "beginner",
       completed: false
     },
     {
@@ -27,6 +28,7 @@ const SqlDojo = () => {
       hint: "使用 WHERE house = 'Red' AND gender = 'M'",
       answerSQL: "SELECT * FROM STUDENT WHERE house = 'Red' AND gender = 'M'",
       requiredKeywords: ["WHERE"],
+      level: "beginner",
       completed: false
     },
     {
@@ -36,6 +38,7 @@ const SqlDojo = () => {
       hint: "使用 ORDER BY c_name ASC",
       answerSQL: "SELECT c_name FROM CLUB ORDER BY c_name ASC",
       requiredKeywords: ["ORDER BY"],
+      level: "beginner",
       completed: false
     },
     {
@@ -45,6 +48,7 @@ const SqlDojo = () => {
       hint: "需要連接 STUDENT, MEMBERSHIP 和 CLUB 三張表。",
       answerSQL: "SELECT S.name, M.role FROM STUDENT S JOIN MEMBERSHIP M ON S.sid = M.student_id JOIN CLUB C ON M.club_id = C.cid WHERE C.c_name = 'Coding'",
       requiredKeywords: ["JOIN"],
+      level: "intermediate",
       completed: false
     },
     {
@@ -54,6 +58,7 @@ const SqlDojo = () => {
       hint: "使用 GROUP BY house 和 COUNT(*)",
       answerSQL: "SELECT house, COUNT(*) as count FROM STUDENT GROUP BY house",
       requiredKeywords: ["GROUP BY"],
+      level: "intermediate",
       completed: false
     },
     {
@@ -63,6 +68,107 @@ const SqlDojo = () => {
       hint: "先 GROUP BY club_id，再用 HAVING COUNT(*) > 2",
       answerSQL: "SELECT club_id FROM MEMBERSHIP GROUP BY club_id HAVING COUNT(*) > 2",
       requiredKeywords: ["HAVING"],
+      level: "advanced",
+      completed: false
+    },
+    {
+      id: 6,
+      title: "7. 左連接查詢 (LEFT JOIN)",
+      desc: "列出所有學生及其所屬的學會名稱 (c_name)，即使學生沒有參加任何學會。",
+      hint: "使用 LEFT JOIN 來獲取所有學生。",
+      answerSQL: "SELECT S.name, C.c_name FROM STUDENT S LEFT JOIN MEMBERSHIP M ON S.sid = M.student_id LEFT JOIN CLUB C ON M.club_id = C.cid",
+      requiredKeywords: ["LEFT JOIN"],
+      level: "intermediate",
+      completed: false
+    },
+    {
+      id: 7,
+      title: "8. 學會全表查詢 (LEFT JOIN)",
+      desc: "列出所有學會及其成員的姓名 (name)，即使學會沒有成員。",
+      hint: "以 CLUB 為主表，使用 LEFT JOIN 連接 MEMBERSHIP 和 STUDENT。",
+      answerSQL: "SELECT C.c_name, S.name FROM CLUB C LEFT JOIN MEMBERSHIP M ON C.cid = M.club_id LEFT JOIN STUDENT S ON M.student_id = S.sid",
+      requiredKeywords: ["LEFT JOIN"],
+      level: "intermediate",
+      completed: false
+    },
+    {
+      id: 8,
+      title: "9. 聯合查詢 (UNION)",
+      desc: "列出所有學生的姓名和所有學會的名稱，並去除重複項。",
+      hint: "使用 UNION 來合併兩個查詢的結果。",
+      answerSQL: "SELECT name FROM STUDENT UNION SELECT c_name FROM CLUB",
+      requiredKeywords: ["UNION"],
+      level: "advanced",
+      completed: false
+    },
+    {
+      id: 9,
+      title: "10. 子查詢 (SUBQUERY)",
+      desc: "找出所有參加 'Coding' 學會的學生姓名。",
+      hint: "使用子查詢來獲取學生姓名。",
+      answerSQL: "SELECT name FROM STUDENT WHERE sid IN (SELECT student_id FROM MEMBERSHIP WHERE club_id = 'C01')",
+      requiredKeywords: ["IN", "SELECT"],
+      level: "advanced",
+      completed: false
+    },
+    {
+      id: 10,
+      title: "11. 去除重複 (DISTINCT)",
+      desc: "列出所有有參加學會的學生 ID (student_id)，並去除重複。",
+      hint: "提示：MEMBERSHIP 內同一學生可出現多次，使用 DISTINCT。",
+      answerSQL: "SELECT DISTINCT student_id FROM MEMBERSHIP",
+      requiredKeywords: ["DISTINCT"],
+      level: "beginner",
+      completed: false
+    },
+    {
+      id: 11,
+      title: "12. 多表 JOIN + 排序 (ORDER BY)",
+      desc: "列出每個學生參加的學會名稱 (c_name) 及職位 (role)，按學生姓名排序。",
+      hint: "連接 STUDENT + MEMBERSHIP + CLUB，並 ORDER BY S.name。",
+      answerSQL: "SELECT S.name, C.c_name, M.role FROM STUDENT S JOIN MEMBERSHIP M ON S.sid = M.student_id JOIN CLUB C ON M.club_id = C.cid ORDER BY S.name ASC",
+      requiredKeywords: ["JOIN", "ORDER BY"],
+      level: "intermediate",
+      completed: false
+    },
+    {
+      id: 12,
+      title: "13. 反向查詢：沒有參加學會的學生 (NOT IN)",
+      desc: "找出沒有參加任何學會的學生姓名。",
+      hint: "用 NOT IN 子查詢：sid NOT IN (SELECT student_id FROM MEMBERSHIP)。",
+      answerSQL: "SELECT name FROM STUDENT WHERE sid NOT IN (SELECT student_id FROM MEMBERSHIP)",
+      requiredKeywords: ["NOT IN", "SELECT"],
+      level: "advanced",
+      completed: false
+    },
+    {
+      id: 13,
+      title: "14. EXISTS 子查詢",
+      desc: "列出所有至少參加一個學會的學生姓名。",
+      hint: "用 EXISTS：檢查 MEMBERSHIP 是否存在對應 student_id。",
+      answerSQL: "SELECT S.name FROM STUDENT S WHERE EXISTS (SELECT 1 FROM MEMBERSHIP M WHERE M.student_id = S.sid)",
+      requiredKeywords: ["EXISTS", "SELECT"],
+      level: "advanced",
+      completed: false
+    },
+    {
+      id: 14,
+      title: "15. 聚合 + HAVING：參加多於 1 個學會",
+      desc: "找出參加超過 1 個學會的學生姓名。",
+      hint: "GROUP BY student_id，再 HAVING COUNT(DISTINCT club_id) > 1，並連接 STUDENT 取姓名。",
+      answerSQL: "SELECT S.name FROM STUDENT S JOIN (SELECT student_id FROM MEMBERSHIP GROUP BY student_id HAVING COUNT(DISTINCT club_id) > 1) T ON S.sid = T.student_id",
+      requiredKeywords: ["GROUP BY", "HAVING"],
+      level: "advanced",
+      completed: false
+    },
+    {
+      id: 15,
+      title: "16. 子查詢 + 聚合：最多成員的學會",
+      desc: "找出成員人數最多的學會名稱 (c_name)。",
+      hint: "先算每個 club_id 的人數，再取最大值 (MAX)。",
+      answerSQL: "SELECT C.c_name FROM CLUB C JOIN (SELECT club_id, COUNT(*) AS cnt FROM MEMBERSHIP GROUP BY club_id) X ON C.cid = X.club_id WHERE X.cnt = (SELECT MAX(cnt) FROM (SELECT COUNT(*) AS cnt FROM MEMBERSHIP GROUP BY club_id) Y)",
+      requiredKeywords: ["SELECT"],
+      level: "advanced",
       completed: false
     }
   ]);
@@ -128,7 +234,7 @@ const SqlDojo = () => {
     alasql('DROP TABLE IF EXISTS CLUB');
     alasql('DROP TABLE IF EXISTS MEMBERSHIP');
     
-    setMissions(missions.map(m => ({ ...m, completed: false })));
+    setMissions(prev => prev.map(m => ({ ...m, completed: false })));
     setCurrentMissionId(null);
     setSqlInput('');
     setResult(null);
@@ -257,6 +363,19 @@ const SqlDojo = () => {
 
   const currentMission = currentMissionId !== null ? missions[currentMissionId] : null;
   const completedCount = missions.filter(m => m.completed).length;
+
+  const groupedMissions = missions.reduce((acc, mission, index) => {
+    const level = mission.level || 'beginner';
+    if (!acc[level]) acc[level] = [];
+    acc[level].push({ mission, index });
+    return acc;
+  }, {});
+
+  const levelMeta = {
+    beginner: { label: '初級', badge: 'bg-green-50 text-green-700 border-green-200' },
+    intermediate: { label: '中級', badge: 'bg-amber-50 text-amber-700 border-amber-200' },
+    advanced: { label: '進階', badge: 'bg-red-50 text-red-700 border-red-200' }
+  };
 
   return (
     <div className="flex flex-col h-[calc(100vh-64px)] bg-slate-50">
@@ -444,37 +563,53 @@ const SqlDojo = () => {
             <span>任務列表 (Missions)</span>
           </div>
           <div className="overflow-y-auto p-0 flex-1 bg-slate-50">
-            {missions.map((mission, index) => (
-              <div 
-                key={mission.id}
-                onClick={() => selectMission(index)}
-                className={`p-4 border-b border-slate-200 cursor-pointer hover:bg-slate-100 flex items-start justify-between group transition-all
-                  ${currentMissionId === index ? 'bg-blue-50 border-l-4 border-l-blue-600' : 'bg-white'}
-                  ${mission.completed ? 'border-l-4 border-l-green-500 opacity-80' : ''}
-                `}
-              >
-                <div className="flex items-start gap-3">
-                  <div className="mt-0.5">
-                    {mission.completed ? (
-                      <span className="text-green-500 bg-green-100 rounded-full p-1 block">
-                        <CheckCircle size={14} />
-                      </span>
-                    ) : (
-                      <span className="text-slate-400 bg-slate-100 rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold">
-                        {index + 1}
-                      </span>
-                    )}
+            {(['beginner', 'intermediate', 'advanced']).map((level) => {
+              const items = groupedMissions[level] || [];
+              if (items.length === 0) return null;
+              const meta = levelMeta[level];
+              return (
+                <div key={level}>
+                  <div className="px-4 py-3 border-b border-slate-200 bg-white flex items-center justify-between">
+                    <span className={`text-xs font-bold px-2.5 py-1 rounded-full border ${meta.badge}`}>
+                      {meta.label}
+                    </span>
+                    <span className="text-xs text-slate-400">{items.length} 題</span>
                   </div>
-                  <div>
-                    <h3 className={`font-bold text-sm transition ${currentMissionId === index ? 'text-blue-700' : 'text-slate-800'}`}>
-                      {mission.title}
-                    </h3>
-                    <p className="text-xs text-slate-500 mt-1 line-clamp-2">{mission.desc}</p>
-                  </div>
+
+                  {items.map(({ mission, index }) => (
+                    <div
+                      key={mission.id}
+                      onClick={() => selectMission(index)}
+                      className={`p-4 border-b border-slate-200 cursor-pointer hover:bg-slate-100 flex items-start justify-between group transition-all
+                        ${currentMissionId === index ? 'bg-blue-50 border-l-4 border-l-blue-600' : 'bg-white'}
+                        ${mission.completed ? 'border-l-4 border-l-green-500 opacity-80' : ''}
+                      `}
+                    >
+                      <div className="flex items-start gap-3">
+                        <div className="mt-0.5">
+                          {mission.completed ? (
+                            <span className="text-green-500 bg-green-100 rounded-full p-1 block">
+                              <CheckCircle size={14} />
+                            </span>
+                          ) : (
+                            <span className="text-slate-400 bg-slate-100 rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold">
+                              {index + 1}
+                            </span>
+                          )}
+                        </div>
+                        <div>
+                          <h3 className={`font-bold text-sm transition ${currentMissionId === index ? 'text-blue-700' : 'text-slate-800'}`}>
+                            {mission.title}
+                          </h3>
+                          <p className="text-xs text-slate-500 mt-1 line-clamp-2">{mission.desc}</p>
+                        </div>
+                      </div>
+                      {currentMissionId === index && <ChevronRight size={16} className="text-blue-500 mt-1" />}
+                    </div>
+                  ))}
                 </div>
-                {currentMissionId === index && <ChevronRight size={16} className="text-blue-500 mt-1" />}
-              </div>
-            ))}
+              );
+            })}
           </div>
         </aside>
       </div>

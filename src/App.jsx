@@ -36,6 +36,8 @@ import KnowledgeDetail from './components/KnowledgeDetail';
 import ManageQuestions from './components/ManageQuestions';
 import UserDashboard from './components/UserDashboard';
 import SqlDojo from './components/SqlDojo';
+import PythonDojo from './components/PythonDojo';
+import ExcelDojo from './components/ExcelDojo';
 import SearchKnowledge from './components/SearchKnowledge';
 import Stats from './components/Stats'; // <--- Added import
 import KnowledgeHub from './components/KnowledgeHub'; // <--- Added import for KnowledgeHub
@@ -138,6 +140,7 @@ const App = () => {
             user ? <QuizWrapper user={user} /> : <Navigate to="/login" replace />
           } />
 
+          <Route path="/knowledge-hub" element={<KnowledgeHub user={user} />} />
 
           <Route path="/stats" element={
             user ? <Stats user={user} /> : <Navigate to="/login" replace />
@@ -157,9 +160,7 @@ const App = () => {
           } />
           
           {/* 查看笔记详情 */}
-          <Route path="/knowledge/:id" element={
-            user ? <KnowledgeDetail user={user} /> : <Navigate to="/login" replace />
-          } />
+          <Route path="/knowledge/:id" element={<KnowledgeDetail user={user} />} />
 
           <Route path="/knowledge/:id/edit" element={
             user ? <KnowledgeEdit user={user} /> : <Navigate to="/login" replace />
@@ -176,9 +177,12 @@ const App = () => {
           } />
 
           <Route path="/sql-dojo" element={<SqlDojo />} />
+          <Route path="/sql-dojo-advanced" element={<Navigate to="/sql-dojo" replace />} />
+          <Route path="/python-dojo" element={<PythonDojo />} />
+          <Route path="/excel-dojo" element={<ExcelDojo />} />
 
-          <Route path="*" element={<Navigate to="/" replace />} />
           <Route path="/admin" element={<AdminDashboard user={user} />} />
+          <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </main>
 

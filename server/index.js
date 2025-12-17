@@ -58,15 +58,6 @@ app.use(express.json());
 // 开放静态文件访问，让前端能加载图片
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
-// --- MongoDB 连接 ---
-mongoose.connect(process.env.MONGO_URI)
-  .then(() => {
-    console.log('MongoDB 连接成功');
-    seedDatabase(); // <--- 连接成功后检查并初始化数据
-    seedAdminUser(); // <--- 调用初始化函数
-  })
-  .catch(err => console.error('MongoDB 连接失败:', err));
-
 // --- 初始 Syllabus 数据 (用于初始化数据库) ---
 const INITIAL_SYLLABUS_DATA = {
   compulsory: [
@@ -101,14 +92,27 @@ const seedDatabase = async () => {
   }
 };
 
-// --- MongoDB 连接 ---
-mongoose.connect(process.env.MONGO_URI)
-  .then(() => {
+const startServer = async () => {
+  try {
+    await mongoose.connect(process.env.MONGO_URI, {
+      serverSelectionTimeoutMS: 30000
+    });
     console.log('MongoDB 连接成功');
-    seedDatabase(); // <--- 连接成功后检查并初始化数据
-    seedAdminUser(); // <--- 调用初始化函数
-  })
-  .catch(err => console.error('MongoDB 连接失败:', err));
+
+    await seedDatabase(); // <--- 连接成功后检查并初始化数据
+    await seedAdminUser(); // <--- 调用初始化函数
+
+    app.listen(PORT, () => {
+      const backendUrl = process.env.BACKEND_URL || `http://localhost:${PORT}`;
+      const frontendUrl = process.env.FRONTEND_URL || 'http://localhost';
+      console.log(`后端服务器运行在 ${backendUrl}`);
+      console.log(`前端地址: ${frontendUrl}`);
+    });
+  } catch (err) {
+    console.error('MongoDB 连接失败:', err);
+    process.exit(1);
+  }
+};
 
 // --- 模拟课程数据 ---
 const MOCK_DATA = {
@@ -290,13 +294,14 @@ app.put('/api/questions/:id', async (req, res) => {
 // 记录用户行为 (合并修复版)
 app.post('/api/actions', async (req, res) => {
   // 1. 先尝试从顶层获取
-  let { userId, actionType, moduleId, score, totalQuestions, details } = req.body;
+  let { userId, actionType, moduleId, score, totalQuestions, attemptedQuestions, details } = req.body;
 
   // 2. 如果顶层没有，尝试从 details 中提取 (兼容前端 QuizInterface 的发送格式)
   if (details) {
     if (!moduleId) moduleId = details.moduleId;
     if (score === undefined) score = details.score;
     if (totalQuestions === undefined) totalQuestions = details.totalQuestions;
+    if (attemptedQuestions === undefined) attemptedQuestions = details.attemptedQuestions;
   }
 
   try {
@@ -306,6 +311,7 @@ app.post('/api/actions', async (req, res) => {
       moduleId,
       score,
       totalQuestions,
+      attemptedQuestions,
       details
     });
     await newAction.save();
@@ -634,7 +640,7 @@ app.get('/api/stats/:userId', async (req, res) => {
   try {
     const userId = new mongoose.Types.ObjectId(req.params.userId);
 
-    // 使用聚合管道计算统计数据
+    // 使用聚合管道计算总体统计数据
     const stats = await UserAction.aggregate([
       {
         $match: {
@@ -652,12 +658,85 @@ app.get('/api/stats/:userId', async (req, res) => {
       }
     ]);
 
+    // 按单元统计 (用于找弱项)
+    const byModuleAgg = await UserAction.aggregate([
+      {
+        $match: {
+          userId: userId,
+          actionType: { $in: ['QUIZ_COMPLETE', 'QUIZ_END'] },
+          moduleId: { $ne: null }
+        }
+      },
+      {
+        $group: {
+          _id: '$moduleId',
+          attempts: { $sum: 1 },
+          attemptedQuestions: { $sum: { $ifNull: ['$attemptedQuestions', '$totalQuestions'] } },
+          totalQuestions: { $sum: '$totalQuestions' },
+          totalScore: { $sum: '$score' },
+          lastAttemptAt: { $max: '$timestamp' }
+        }
+      },
+      {
+        $addFields: {
+          accuracy: {
+            $cond: [
+              { $gt: ['$attemptedQuestions', 0] },
+              { $round: [{ $multiply: [{ $divide: ['$totalScore', '$attemptedQuestions'] }, 100] }, 0] },
+              0
+            ]
+          }
+        }
+      },
+      { $sort: { accuracy: 1, totalQuestions: -1 } }
+    ]);
+
+    const attemptMetaAgg = await UserAction.aggregate([
+      {
+        $match: {
+          userId: userId,
+          actionType: { $in: ['QUIZ_COMPLETE', 'QUIZ_END'] }
+        }
+      },
+      {
+        $group: {
+          _id: '$actionType',
+          attempts: { $sum: 1 },
+          attemptedQuestions: { $sum: { $ifNull: ['$attemptedQuestions', '$totalQuestions'] } },
+          totalScore: { $sum: '$score' }
+        }
+      }
+    ]);
+
     // 如果没有数据，返回默认值
     if (stats.length === 0) {
+      const byModule = byModuleAgg.map(m => ({
+        moduleId: m._id,
+        attempts: m.attempts || 0,
+        attemptedQuestions: m.attemptedQuestions || 0,
+        totalQuestions: m.totalQuestions || 0,
+        totalScore: m.totalScore || 0,
+        accuracy: typeof m.accuracy === 'number' ? m.accuracy : 0,
+        lastAttemptAt: m.lastAttemptAt || null
+      }));
+
+      const weakestModule = byModule.length > 0 ? byModule[0] : null;
+      const quizAttempts = attemptMetaAgg.reduce((acc, row) => {
+        acc[row._id] = {
+          attempts: row.attempts || 0,
+          attemptedQuestions: row.attemptedQuestions || 0,
+          totalScore: row.totalScore || 0
+        };
+        return acc;
+      }, {});
+
       return res.json({
         completedModules: 0,
         totalQuestions: 0,
-        accuracy: '0%'
+        accuracy: '0%',
+        byModule,
+        weakestModule,
+        quizAttempts
       });
     }
 
@@ -667,22 +746,39 @@ app.get('/api/stats/:userId', async (req, res) => {
       ? Math.round((result.totalScore / result.totalQuestions) * 100)
       : 0;
 
+    const byModule = byModuleAgg.map(m => ({
+      moduleId: m._id,
+      attempts: m.attempts || 0,
+      attemptedQuestions: m.attemptedQuestions || 0,
+      totalQuestions: m.totalQuestions || 0,
+      totalScore: m.totalScore || 0,
+      accuracy: typeof m.accuracy === 'number' ? m.accuracy : 0,
+      lastAttemptAt: m.lastAttemptAt || null
+    }));
+
+    const weakestModule = byModule.length > 0 ? byModule[0] : null;
+    const quizAttempts = attemptMetaAgg.reduce((acc, row) => {
+      acc[row._id] = {
+        attempts: row.attempts || 0,
+        attemptedQuestions: row.attemptedQuestions || 0,
+        totalScore: row.totalScore || 0
+      };
+      return acc;
+    }, {});
+
     res.json({
       completedModules: result.uniqueModules.length,
       totalQuestions: result.totalQuestions,
-      accuracy: `${accuracy}%`
+      accuracy: `${accuracy}%`,
+      byModule,
+      weakestModule,
+      quizAttempts
     });
 
   } catch (error) {
     console.error('Stats error:', error);
     res.status(500).json({ message: '获取统计数据失败' });
   }
-});
-
-// --- Syllabus API ---
-// 获取课程大纲
-app.get('/api/syllabus', (req, res) => {
-  res.json(SYLLABUS_DATA);
 });
 
 // ==========================================
@@ -785,7 +881,4 @@ app.delete('/api/admin/users/:id', verifyAdmin, async (req, res) => {
 });
 
 
-app.listen(PORT, () => {
-  console.log(`后端服务器运行在 http://localhost:${PORT}`);
-});
-
+startServer();

@@ -41,6 +41,7 @@ const userActionSchema = new mongoose.Schema({
   moduleId: { type: String }, // 相关单元 ID (可选)
   score: { type: Number }, // 如果是测验，记录分数
   totalQuestions: { type: Number }, // 总题数
+  attemptedQuestions: { type: Number }, // 提前退出时的已作答题数 (可选)
   details: { type: mongoose.Schema.Types.Mixed }, // 其他详细数据 (JSON)
   timestamp: { type: Date, default: Date.now }
 });

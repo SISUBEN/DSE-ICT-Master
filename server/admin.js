@@ -12,12 +12,12 @@ export const seedAdminUser = async () => {
     if (!adminExists) {
       console.log('正在创建默认管理员账户...');
       
-      // 2. 生成随机密码 (8字节 = 16个字符的十六进制字符串)
-      const randomPassword = crypto.randomBytes(8).toString('hex');
+      const configuredPassword = process.env.ADMIN_PASSWORD && String(process.env.ADMIN_PASSWORD).trim();
+      const passwordToUse = configuredPassword || crypto.randomBytes(8).toString('hex');
       
       // 生成加密密码
       const salt = await bcrypt.genSalt(10);
-      const hashedPassword = await bcrypt.hash(randomPassword, salt);
+      const hashedPassword = await bcrypt.hash(passwordToUse, salt);
 
       const adminUser = new User({
         username: 'admin',
@@ -35,8 +35,11 @@ export const seedAdminUser = async () => {
       console.log('\n===========================================');
       console.log('管理员账户已自动生成');
       console.log(`用户名: admin`);
-      console.log(`临时密码: ${randomPassword}`);
-      console.log('请务必复制此密码，登录后建议立即修改！');
+      console.log(`密码: ${passwordToUse}`);
+      if (!configuredPassword) {
+        console.log('提示: 未设置 ADMIN_PASSWORD，已自动生成随机密码。');
+      }
+      console.log('请务必复制此密码，登录后建议立即修改。');
       console.log('===========================================\n');
     } else {
       // 确保现有 admin 用户拥有 admin 角色
